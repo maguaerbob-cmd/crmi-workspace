@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -78,27 +77,27 @@ export default function NewTask() {
   return (
     <Layout title="Новая задача">
       <div className="max-w-3xl mx-auto pb-20">
-        <Card className="border-none shadow-sm overflow-hidden bg-white rounded-3xl">
-          <div className="h-2 bg-slate-950 w-full" />
+        <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
+          <div className="h-1.5 bg-primary w-full opacity-80" />
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Название задачи</Label>
+                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Название задачи</Label>
                 <Input 
                   id="title" 
                   required 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
                   placeholder="Введите краткий заголовок..." 
-                  className="h-12 text-lg font-black border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl"
+                  className="h-12 text-lg font-black border-border bg-muted/10 focus-visible:ring-primary/10 rounded-xl"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-4 h-4 text-slate-950" />
-                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Срок исполнения</Label>
+                    <Calendar className="w-4 h-4 text-foreground" />
+                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Срок исполнения</Label>
                   </div>
                   <Input 
                     id="datetime" 
@@ -106,14 +105,14 @@ export default function NewTask() {
                     required 
                     value={datetime} 
                     onChange={(e) => setDatetime(e.target.value)} 
-                    className="h-12 border-slate-200 bg-white rounded-xl font-bold"
+                    className="h-12 border-border bg-background rounded-xl font-bold"
                   />
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="w-4 h-4 text-slate-950" />
-                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Место выполнения</Label>
+                    <MapPin className="w-4 h-4 text-foreground" />
+                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Место выполнения</Label>
                   </div>
                   <Input 
                     id="place" 
@@ -121,17 +120,17 @@ export default function NewTask() {
                     value={place} 
                     onChange={(e) => setPlace(e.target.value)} 
                     placeholder="Локация..." 
-                    className="h-12 border-slate-200 bg-white rounded-xl font-bold"
+                    className="h-12 border-border bg-background rounded-xl font-bold"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <Flag className="w-4 h-4 text-slate-950" />
-                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Приоритет</Label>
+                    <Flag className="w-4 h-4 text-foreground" />
+                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Приоритет</Label>
                   </div>
                   <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                    <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
+                    <SelectTrigger className="h-12 border-border bg-background rounded-xl font-bold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -142,11 +141,11 @@ export default function NewTask() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <UserIcon className="w-4 h-4 text-slate-950" />
-                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Исполнитель</Label>
+                    <UserIcon className="w-4 h-4 text-foreground" />
+                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Исполнитель</Label>
                   </div>
                   <Select value={responsibleUserId} onValueChange={setResponsibleUserId} required>
-                    <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
+                    <SelectTrigger className="h-12 border-border bg-background rounded-xl font-bold">
                       <SelectValue placeholder="Выберите сотрудника" />
                     </SelectTrigger>
                     <SelectContent>
@@ -156,19 +155,19 @@ export default function NewTask() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Детальное описание</Label>
+                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Детальное описание</Label>
                   <Textarea 
                     id="description" 
                     required 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
                     placeholder="Опишите требования к задаче..."
-                    className="min-h-[150px] border-slate-200 bg-white rounded-xl p-4 text-sm font-medium leading-relaxed" 
+                    className="min-h-[150px] border-border bg-background rounded-xl p-4 text-sm font-medium leading-relaxed" 
                   />
                 </div>
 
-                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Контрольный чек-лист</Label>
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-border">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Контрольный чек-лист</Label>
                   
                   <div className="flex gap-3">
                     <Input 
@@ -176,19 +175,19 @@ export default function NewTask() {
                       value={newCheckItem} 
                       onChange={(e) => setNewCheckItem(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCheckItem())}
-                      className="h-12 border-slate-200 bg-slate-50 rounded-xl shadow-inner font-bold"
+                      className="h-12 border-border bg-muted/10 rounded-xl shadow-inner font-bold"
                     />
-                    <Button type="button" onClick={handleAddCheckItem} className="h-12 w-12 rounded-xl bg-slate-950 text-white hover:bg-slate-900 shadow-lg shrink-0">
+                    <Button type="button" onClick={handleAddCheckItem} className="h-12 w-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shrink-0">
                       <Plus className="w-6 h-6" />
                     </Button>
                   </div>
 
                   <div className="grid gap-2">
                     {checklist.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white border border-slate-100 px-4 py-3 rounded-xl group hover:border-slate-200 transition-all">
-                        <span className="text-sm font-bold text-slate-800">{item.text}</span>
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => handleRemoveCheckItem(index)}>
-                          <X className="h-5 h-5" />
+                      <div key={index} className="flex items-center justify-between bg-muted/5 border border-border/50 px-4 py-3 rounded-xl group hover:border-border transition-all">
+                        <span className="text-sm font-bold text-foreground/80">{item.text}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveCheckItem(index)}>
+                          <X className="h-5 w-5" />
                         </Button>
                       </div>
                     ))}
@@ -197,10 +196,10 @@ export default function NewTask() {
               </div>
 
               <div className="pt-8 flex flex-col sm:flex-row gap-4">
-                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-950 text-white shadow-lg hover:bg-slate-900">
+                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-primary text-primary-foreground shadow-lg hover:bg-primary/90">
                   {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : "Создать задачу"}
                 </Button>
-                <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-2" onClick={() => router.back()}>
+                <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-muted-foreground border-2" onClick={() => router.back()}>
                   Отмена
                 </Button>
               </div>
