@@ -114,7 +114,9 @@ export default function TaskDetails() {
 
   const completedCount = checklist.filter(i => i.done).length;
   const progress = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
-  const priorityKey = (task.priority?.toLowerCase() || 'средний') as Priority;
+  
+  // Нормализация приоритета
+  const priorityKey = (task.priority?.toString().trim().toLowerCase() || 'средний') as Priority;
   const priorityColor = PRIORITY_COLORS[priorityKey] || "bg-muted";
 
   return (

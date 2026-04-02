@@ -58,17 +58,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
-  // Нормализуем приоритет для безопасности
-  const p = (priority?.toLowerCase() || 'средний') as Priority;
+  // Тщательная нормализация приоритета для работы с кириллицей и пробелами
+  const p = (priority?.toString().trim().toLowerCase() || 'средний') as Priority;
 
-  const getGlowClass = (priorityValue: Priority) => {
+  const getGlowClass = (priorityValue: string) => {
     switch (priorityValue) {
       case 'высокий': 
-        return "shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] dark:shadow-[0_0_30px_-5px_rgba(220,38,38,0.7)]";
+        return "shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] border-red-600/20";
       case 'средний': 
-        return "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)] dark:shadow-[0_0_25px_-5px_rgba(234,179,8,0.6)]";
+        return "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)] border-yellow-500/20";
       case 'низкий': 
-        return "shadow-[0_0_15px_-5px_rgba(22,163,74,0.3)] dark:shadow-[0_0_20px_-5px_rgba(22,163,74,0.5)]";
+        return "shadow-[0_0_15px_-5px_rgba(22,163,74,0.3)] border-green-600/20";
       default: 
         return "";
     }
@@ -79,7 +79,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
-        "card-industrial overflow-hidden rounded-2xl group border-none transition-all duration-300 hover:scale-[1.02] bg-card",
+        "card-industrial overflow-hidden rounded-2xl group border transition-all duration-300 hover:scale-[1.02] bg-card",
         getGlowClass(p)
       )}>
         <div className="flex min-h-[160px]">
