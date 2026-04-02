@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import { PRIORITIES, Priority } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Calendar, MapPin, Flag, User as UserIcon, Loader2 } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2 } from 'lucide-react';
 
 export default function NewTask() {
   const { userData, user } = useAuth();
@@ -27,7 +26,6 @@ export default function NewTask() {
   const [description, setDescription] = useState('');
   const [datetime, setDatetime] = useState('');
   const [place, setPlace] = useState('');
-  const [priority, setPriority] = useState<Priority>('средний');
   const [responsibleUserId, setResponsibleUserId] = useState('');
   const [checklist, setChecklist] = useState<{ text: string; done: boolean }[]>([]);
   const [newCheckItem, setNewCheckItem] = useState('');
@@ -60,7 +58,6 @@ export default function NewTask() {
       description,
       dateTime: datetime,
       place,
-      priority,
       status: 'запланировано',
       departmentId: userData.departmentId,
       responsibleUserId,
@@ -126,21 +123,6 @@ export default function NewTask() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <Flag className="w-4 h-4 text-foreground" />
-                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Приоритет</Label>
-                  </div>
-                  <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                    <SelectTrigger className="h-12 border-border bg-background rounded-xl font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRIORITIES.map(p => <SelectItem key={p} value={p} className="uppercase font-black text-[10px] tracking-widest">{p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
                     <UserIcon className="w-4 h-4 text-foreground" />
                     <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Исполнитель</Label>
                   </div>
@@ -187,7 +169,7 @@ export default function NewTask() {
                       <div key={index} className="flex items-center justify-between bg-muted/5 border border-border/50 px-4 py-3 rounded-xl group hover:border-border transition-all">
                         <span className="text-sm font-bold text-foreground/80">{item.text}</span>
                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveCheckItem(index)}>
-                          <X className="h-5 w-5" />
+                          <X className="h-5 v-5" />
                         </Button>
                       </div>
                     ))}

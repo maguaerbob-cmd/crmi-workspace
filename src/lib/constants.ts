@@ -21,15 +21,6 @@ export const ROLE_LABELS: Record<Role, string> = {
   reader: "Читатель"
 };
 
-export const PRIORITIES = ["низкий", "средний", "высокий"] as const;
-export type Priority = typeof PRIORITIES[number];
-
-export const PRIORITY_COLORS: Record<Priority, string> = {
-  "низкий": "bg-green-600",
-  "средний": "bg-yellow-500",
-  "высокий": "bg-red-600"
-};
-
 export const STATUSES = ["запланировано", "в процессе", "завершено"] as const;
 export type TaskStatus = typeof STATUSES[number];
 

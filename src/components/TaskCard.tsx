@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Edit2, MoreVertical, UserCircle } from 'lucide-react';
-import { Priority, PRIORITY_COLORS, TaskStatus, STATUSES } from '@/lib/constants';
+import { TaskStatus, STATUSES } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateDocumentNonBlocking } from '@/firebase';
@@ -24,7 +24,6 @@ interface TaskCardProps {
   title: string;
   datetime: string;
   place: string;
-  priority: Priority;
   status: TaskStatus;
   checklist: { text: string; done: boolean }[];
   departmentId: string;
@@ -34,7 +33,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ 
-  id, title, datetime, place, priority, status, checklist, createdByName, canEdit 
+  id, title, datetime, place, status, checklist, createdByName, canEdit 
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -58,34 +57,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
-  // Тщательная нормализация приоритета для работы с кириллицей и пробелами
-  const p = (priority?.toString().trim().toLowerCase() || 'средний') as Priority;
-
-  const getGlowClass = (priorityValue: string) => {
-    switch (priorityValue) {
-      case 'высокий': 
-        return "shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] border-red-600/20";
-      case 'средний': 
-        return "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)] border-yellow-500/20";
-      case 'низкий': 
-        return "shadow-[0_0_15px_-5px_rgba(22,163,74,0.3)] border-green-600/20";
-      default: 
-        return "";
-    }
-  };
-
-  const priorityColor = PRIORITY_COLORS[p] || "bg-muted";
-
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
-        "card-industrial overflow-hidden rounded-2xl group border transition-all duration-300 hover:scale-[1.02] bg-card",
-        getGlowClass(p)
+        "card-industrial overflow-hidden rounded-2xl group border transition-all duration-300 hover:scale-[1.02] bg-card"
       )}>
         <div className="flex min-h-[160px]">
-          {/* Левая полоса цвета приоритета */}
-          <div className={cn("w-2 shrink-0 transition-colors", priorityColor)} />
-          
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">
               <div className="flex justify-between items-center">

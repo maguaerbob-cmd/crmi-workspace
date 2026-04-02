@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, MapPin, ChevronLeft, Trash2, CheckCircle, Clock, AlertCircle, Edit2 } from 'lucide-react';
-import { PRIORITY_COLORS, STATUSES, TaskStatus, Priority } from '@/lib/constants';
+import { STATUSES, TaskStatus } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -64,7 +64,6 @@ export default function TaskDetails() {
   const isHeadOfDept = userData?.role === 'head' && userData?.departmentId === task?.departmentId;
   const isCompleted = task?.status === 'завершено';
 
-  // Владелец может удалять всё, остальные только незавершенные свои или своего отдела
   const canDelete = isGlobalManager || (!isReader && (isCreator || isHeadOfDept) && !isCompleted);
 
   const handleToggleCheck = (index: number) => {
@@ -114,10 +113,6 @@ export default function TaskDetails() {
 
   const completedCount = checklist.filter(i => i.done).length;
   const progress = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
-  
-  // Нормализация приоритета
-  const priorityKey = (task.priority?.toString().trim().toLowerCase() || 'средний') as Priority;
-  const priorityColor = PRIORITY_COLORS[priorityKey] || "bg-muted";
 
   return (
     <Layout title={task.title} showBack>
@@ -169,20 +164,11 @@ export default function TaskDetails() {
         </div>
 
         <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
-          <div className={cn("h-2.5 w-full transition-colors", priorityColor)} />
           <CardHeader className="p-6 md:p-8 space-y-4">
             <div className="flex justify-between items-center">
               <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">
                 {task.status}
               </Badge>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded",
-                priorityKey === 'высокий' ? "text-red-500 bg-red-500/10" : 
-                priorityKey === 'низкий' ? "text-green-500 bg-green-500/10" : 
-                "text-yellow-500 bg-yellow-500/10"
-              )}>
-                {task.priority} приоритет
-              </span>
             </div>
             <CardTitle className="text-2xl font-black text-foreground leading-tight tracking-tight uppercase">
               {task.title}
