@@ -58,11 +58,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
-  // Определение интенсивности свечения в зависимости от приоритета
   const glowClasses = {
-    "низкий": "",
-    "средний": "shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_-5px_rgba(255,255,255,0.1)]",
-    "высокий": "shadow-[0_0_25px_-5px_rgba(0,0,0,0.2)] dark:shadow-[0_0_25px_-5px_rgba(255,255,255,0.25)]"
+    "низкий": "shadow-[0_0_15px_-5px_rgba(34,197,94,0.3)]",
+    "средний": "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)]",
+    "высокий": "shadow-[0_0_25px_-5px_rgba(239,68,68,0.5)]"
   };
 
   return (
@@ -72,8 +71,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         glowClasses[priority]
       )}>
         <div className="flex min-h-[160px]">
-          {/* Боковая полоса приоритета */}
-          <div className={cn("w-1.5 shrink-0", PRIORITY_COLORS[priority])} />
+          <div className={cn("w-1.5 shrink-0 transition-colors", PRIORITY_COLORS[priority])} />
           
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">
@@ -134,7 +132,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="flex items-center gap-1.5">
                   <UserCircle className="w-3 h-3 text-muted-foreground" />
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight truncate max-w-[120px]">
-                    {createdByName || '—'}
+                    Создал: {createdByName || '—'}
                   </span>
                 </div>
                 {checklist.length > 0 && (

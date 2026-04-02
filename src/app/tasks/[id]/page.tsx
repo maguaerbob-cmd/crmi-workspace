@@ -163,7 +163,7 @@ export default function TaskDetails() {
         </div>
 
         <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
-          <div className={`h-2 w-full ${PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]}`} />
+          <div className={`h-2 w-full transition-colors ${PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]}`} />
           <CardHeader className="p-6 md:p-8 space-y-4">
             <div className="flex justify-between items-center">
               <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">

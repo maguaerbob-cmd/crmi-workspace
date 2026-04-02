@@ -25,9 +25,9 @@ export const PRIORITIES = ["низкий", "средний", "высокий"] a
 export type Priority = typeof PRIORITIES[number];
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
-  "низкий": "bg-slate-300 dark:bg-slate-700",
-  "средний": "bg-slate-600 dark:bg-slate-400",
-  "высокий": "bg-slate-950 dark:bg-white"
+  "низкий": "bg-green-500",
+  "средний": "bg-yellow-500",
+  "высокий": "bg-red-500"
 };
 
 export const STATUSES = ["запланировано", "в процессе", "завершено"] as const;
