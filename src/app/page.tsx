@@ -20,8 +20,9 @@ export default function Dashboard() {
   const [selectedDept, setSelectedDept] = useState<string>('all');
 
   const isGlobalManager = useMemo(() => {
-    const role = userData?.role;
-    const deptId = userData?.departmentId;
+    if (!userData) return false;
+    const role = userData.role;
+    const deptId = userData.departmentId;
     return (
       role === 'owner' || 
       role === 'director' || 
@@ -34,12 +35,12 @@ export default function Dashboard() {
     if (!db || !userData || !userData.isApproved) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Если пользователь — глобальный менеджер, он может запрашивать все задачи
+    // Для прохождения проверки Security Rules, запрос должен быть либо с фильтром по отделу,
+    // либо без фильтра, если пользователь является глобальным администратором.
     if (isGlobalManager) {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
-      // Обычные пользователи должны фильтровать по своему отделу в самом запросе,
-      // чтобы пройти проверку правил безопасности Firestore
+      // Обычные пользователи ОБЯЗАНЫ фильтровать по своему отделу в самом запросе
       return query(
         tasksRef, 
         where('departmentId', '==', userData.departmentId),
@@ -69,7 +70,7 @@ export default function Dashboard() {
       );
     }
 
-    // Если глобальный менеджер выбрал конкретный отдел
+    // Дополнительная фильтрация для менеджеров
     if (isGlobalManager && selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
@@ -77,7 +78,6 @@ export default function Dashboard() {
     return result;
   }, [tasks, search, selectedDept, isGlobalManager]);
 
-  // Если пользователь не одобрен
   if (userData && !userData.isApproved && userData.role !== 'owner') {
     return (
       <Layout title="Ожидание доступа">
