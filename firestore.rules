@@ -15,20 +15,16 @@ service cloud.firestore {
         request.auth.uid == userId || 
         get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner'
       );
-      allow delete: if false;
+      // Только владелец может удалять профили сотрудников
+      allow delete: if isSignedIn() && 
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner';
     }
 
-    // Задачи: чтение открыто для всех сотрудников организации (по запросу "все могли видеть")
+    // Задачи: чтение открыто для всех сотрудников организации
     match /tasks/{taskId} {
       allow read, list: if isSignedIn();
-      
-      // Создание разрешено всем ролям кроме "reader"
       allow create: if isSignedIn();
-      
-      // Обновление разрешено сотрудникам для работы над задачами
       allow update: if isSignedIn();
-
-      // Удаление только для владельца
       allow delete: if isSignedIn() && 
         get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner';
     }

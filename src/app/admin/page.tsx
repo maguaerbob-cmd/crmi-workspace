@@ -3,14 +3,26 @@
 import React from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Building2, UserCog } from 'lucide-react';
+import { Shield, Mail, Building2, UserCog, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function AdminPage() {
   const { userData } = useAuth();
@@ -45,6 +57,15 @@ export default function AdminPage() {
     toast({ 
       title: "ОТДЕЛ ОБНОВЛЕН", 
       description: "СОТРУДНИК УСПЕШНО ПЕРЕВЕДЕН В ДРУГОЙ ОТДЕЛ." 
+    });
+  };
+
+  const handleDeleteUser = (uid: string) => {
+    if (!db) return;
+    deleteDocumentNonBlocking(doc(db, 'userProfiles', uid));
+    toast({ 
+      title: "СОТРУДНИК УДАЛЕН", 
+      description: "ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ БЫЛ ИСКЛЮЧЕН ИЗ СИСТЕМЫ." 
     });
   };
 
@@ -86,10 +107,39 @@ export default function AdminPage() {
 
         <div className="grid grid-cols-1 gap-3">
           {users?.map((user) => (
-            <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white rounded-2xl overflow-hidden">
+            <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white rounded-2xl overflow-hidden relative group">
+              {/* Кнопка удаления в верхнем углу (только для владельца и не самого себя) */}
+              {userData?.role === 'owner' && userData?.id !== user.id && (
+                <div className="absolute top-3 right-3 z-10">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-sm font-black uppercase tracking-tight">Удалить сотрудника?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs font-bold text-slate-400 uppercase leading-relaxed">
+                          Профиль {user.name} будет навсегда исключен из системы. Это действие нельзя отменить.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-2">Отмена</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest bg-destructive text-white hover:bg-destructive/90 shadow-lg shadow-destructive/20"
+                        >
+                          Удалить
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Левая часть: Иконка и информация */}
                   <div className="flex items-center gap-4">
                     <Avatar className="w-12 h-12 border-2 border-slate-50 shadow-sm shrink-0">
                       <AvatarFallback className="bg-slate-950 text-white font-black text-xs">
@@ -97,7 +147,7 @@ export default function AdminPage() {
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 pr-10">
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">
                         {user.name}
                       </h3>
@@ -114,7 +164,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Правая часть: Кнопки выбора */}
                   <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-slate-50">
                     {userData?.role === 'owner' && (
                       <div className="flex-1 sm:flex-initial">
@@ -122,7 +171,7 @@ export default function AdminPage() {
                           value={user.departmentId} 
                           onValueChange={(v) => handleDepartmentChange(user.id, v)}
                         >
-                          <SelectTrigger className="h-9 w-full sm:w-[160px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-xl focus:ring-slate-900/10">
+                          <SelectTrigger className="h-8 w-full sm:w-[140px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-lg focus:ring-slate-900/10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -138,7 +187,7 @@ export default function AdminPage() {
 
                     <div className="flex-1 sm:flex-initial">
                       {user.role === 'owner' ? (
-                        <div className="flex items-center justify-center gap-2 text-[9px] font-black text-white px-4 bg-slate-950 rounded-xl shadow-sm uppercase tracking-widest h-9 sm:w-[130px]">
+                        <div className="flex items-center justify-center gap-2 text-[9px] font-black text-white px-4 bg-slate-950 rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
                           <Shield className="w-3 h-3" />
                           OWNER
                         </div>
@@ -148,7 +197,7 @@ export default function AdminPage() {
                           onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
-                          <SelectTrigger className="h-9 w-full sm:w-[130px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-xl focus:ring-slate-900/10">
+                          <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-lg focus:ring-slate-900/10">
                             <SelectValue placeholder="Роль" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
