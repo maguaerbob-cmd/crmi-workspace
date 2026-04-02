@@ -1,1 +1,0 @@
-// File moved to src/app/admin/page.tsx

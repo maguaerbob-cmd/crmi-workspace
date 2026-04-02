@@ -1,1 +1,0 @@
-// Logic moved to src/app/layout.tsx
