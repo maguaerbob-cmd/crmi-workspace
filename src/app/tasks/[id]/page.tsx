@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, MapPin, ChevronLeft, Trash2, CheckCircle, Clock, AlertCircle, Edit2 } from 'lucide-react';
-import { PRIORITY_COLORS, STATUSES, TaskStatus } from '@/lib/constants';
+import { PRIORITY_COLORS, STATUSES, TaskStatus, Priority } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -113,6 +113,7 @@ export default function TaskDetails() {
 
   const completedCount = checklist.filter(i => i.done).length;
   const progress = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
+  const priorityColor = PRIORITY_COLORS[task.priority as Priority] || "bg-muted";
 
   return (
     <Layout title={task.title} showBack>
@@ -164,7 +165,7 @@ export default function TaskDetails() {
         </div>
 
         <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
-          <div className={cn("h-2 w-full transition-colors", PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] || "bg-muted")} />
+          <div className={cn("h-2 w-full transition-colors", priorityColor)} />
           <CardHeader className="p-6 md:p-8 space-y-4">
             <div className="flex justify-between items-center">
               <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">

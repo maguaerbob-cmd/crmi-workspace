@@ -59,21 +59,26 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   // Более интенсивное свечение для лучшей видимости в обеих темах
-  const glowClasses = {
-    "низкий": "shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] dark:shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]",
-    "средний": "shadow-[0_0_25px_-5px_rgba(234,179,8,0.5)] dark:shadow-[0_0_30px_-8px_rgba(234,179,8,0.7)]",
-    "высокий": "shadow-[0_0_30px_-5px_rgba(239,68,68,0.6)] dark:shadow-[0_0_35px_-8px_rgba(239,68,68,0.8)]"
+  const getGlowClass = (p: Priority) => {
+    switch (p) {
+      case 'высокий': return "shadow-[0_0_30px_-5px_rgba(239,68,68,0.6)] dark:shadow-[0_0_35px_-8px_rgba(239,68,68,0.8)]";
+      case 'средний': return "shadow-[0_0_25px_-5px_rgba(234,179,8,0.5)] dark:shadow-[0_0_30px_-8px_rgba(234,179,8,0.7)]";
+      case 'низкий': return "shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] dark:shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]";
+      default: return "";
+    }
   };
+
+  const priorityColor = PRIORITY_COLORS[priority] || "bg-muted";
 
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
-        "card-industrial overflow-hidden rounded-2xl group border-none transition-all duration-300 hover:scale-[1.02]",
-        glowClasses[priority] || ""
+        "card-industrial overflow-hidden rounded-2xl group border-none transition-all duration-300 hover:scale-[1.02] bg-card",
+        getGlowClass(priority)
       )}>
         <div className="flex min-h-[160px]">
           {/* Левая полоса цвета приоритета */}
-          <div className={cn("w-1.5 shrink-0 transition-colors", PRIORITY_COLORS[priority] || "bg-muted")} />
+          <div className={cn("w-1.5 shrink-0 transition-colors", priorityColor)} />
           
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">
