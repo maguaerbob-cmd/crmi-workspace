@@ -30,7 +30,8 @@ service cloud.firestore {
     }
 
     function isSpecialDepartment() {
-      return isSignedIn() && (getAuthData().departmentId == 'technical-service-center' || getAuthData().departmentId == 'media-center');
+      let authData = getAuthData();
+      return isSignedIn() && (authData.departmentId == 'technical-service-center' || authData.departmentId == 'media-center');
     }
 
     function isUserInDepartment(deptId) {
