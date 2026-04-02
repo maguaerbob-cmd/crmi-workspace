@@ -13,7 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2 } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import { PRIORITIES, TaskPriority } from '@/lib/constants';
 
 export default function EditTask() {
   const params = useParams();
@@ -35,6 +36,7 @@ export default function EditTask() {
   const [datetime, setDatetime] = useState('');
   const [place, setPlace] = useState('');
   const [responsibleUserId, setResponsibleUserId] = useState('');
+  const [priority, setPriority] = useState<TaskPriority>('не срочно');
   const [checklist, setChecklist] = useState<{ text: string; done: boolean }[]>([]);
   const [newCheckItem, setNewCheckItem] = useState('');
 
@@ -45,6 +47,7 @@ export default function EditTask() {
       setDatetime(task.dateTime || '');
       setPlace(task.place || '');
       setResponsibleUserId(task.responsibleUserId || '');
+      setPriority(task.priority || 'не срочно');
       setChecklist(task.checklist || []);
     }
   }, [task]);
@@ -76,6 +79,7 @@ export default function EditTask() {
       description,
       dateTime: datetime,
       place,
+      priority,
       responsibleUserId,
       checklist,
     });
@@ -150,6 +154,25 @@ export default function EditTask() {
                     </SelectTrigger>
                     <SelectContent>
                       {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-foreground" />
+                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Срочность</Label>
+                  </div>
+                  <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)} required>
+                    <SelectTrigger className="h-10 border-border bg-background rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITIES.map(p => (
+                        <SelectItem key={p} value={p} className="text-[10px] font-black uppercase">
+                          {p}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

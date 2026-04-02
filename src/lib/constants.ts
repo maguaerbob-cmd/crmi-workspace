@@ -24,4 +24,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const STATUSES = ["запланировано", "в процессе", "завершено"] as const;
 export type TaskStatus = typeof STATUSES[number];
 
+export const PRIORITIES = ["не срочно", "срочно"] as const;
+export type TaskPriority = typeof PRIORITIES[number];
+
 export const ALL_ACCESS_DEPARTMENTS = ["media-center", "technical-service-center"];

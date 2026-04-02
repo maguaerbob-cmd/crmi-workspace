@@ -114,6 +114,8 @@ export default function TaskDetails() {
   const completedCount = checklist.filter(i => i.done).length;
   const progress = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
 
+  const isUrgent = task.priority === 'срочно';
+
   return (
     <Layout title={task.title} showBack>
       <div className="max-w-2xl mx-auto space-y-4 pb-20">
@@ -163,12 +165,26 @@ export default function TaskDetails() {
           </div>
         </div>
 
-        <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
+        <Card className={cn(
+          "border-none shadow-sm overflow-hidden bg-card rounded-3xl relative",
+          isUrgent && "shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+        )}>
+          {isUrgent && <div className="absolute top-0 left-0 right-0 h-1 bg-red-600 animate-pulse" />}
           <CardHeader className="p-6 md:p-8 space-y-4">
             <div className="flex justify-between items-center">
-              <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">
-                {task.status}
-              </Badge>
+              <div className="flex gap-2">
+                <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">
+                  {task.status}
+                </Badge>
+                {task.priority && (
+                  <Badge className={cn(
+                    "text-[9px] font-black uppercase px-3 py-1 border-none text-white",
+                    isUrgent ? "bg-red-600" : "bg-green-600"
+                  )}>
+                    {task.priority}
+                  </Badge>
+                )}
+              </div>
             </div>
             <CardTitle className="text-2xl font-black text-foreground leading-tight tracking-tight uppercase">
               {task.title}

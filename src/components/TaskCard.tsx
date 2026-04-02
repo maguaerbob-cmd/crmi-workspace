@@ -3,8 +3,8 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Edit2, MoreVertical, UserCircle } from 'lucide-react';
-import { TaskStatus, STATUSES } from '@/lib/constants';
+import { Calendar, MapPin, Edit2, MoreVertical, UserCircle, AlertCircle } from 'lucide-react';
+import { TaskStatus, STATUSES, TaskPriority } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateDocumentNonBlocking } from '@/firebase';
@@ -25,6 +25,7 @@ interface TaskCardProps {
   datetime: string;
   place: string;
   status: TaskStatus;
+  priority?: TaskPriority;
   checklist: { text: string; done: boolean }[];
   departmentId: string;
   responsibleUserId: string;
@@ -33,7 +34,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ 
-  id, title, datetime, place, status, checklist, createdByName, canEdit 
+  id, title, datetime, place, status, priority, checklist, createdByName, canEdit 
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -57,18 +58,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
+  const isUrgent = priority === 'срочно';
+  const priorityColor = isUrgent ? 'bg-red-500' : 'bg-green-500';
+  const glowClass = isUrgent 
+    ? 'shadow-[0_0_20px_rgba(239,68,68,0.4)] border-red-500/30' 
+    : 'shadow-sm border-green-500/20';
+
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
-        "card-industrial overflow-hidden rounded-2xl group border transition-all duration-300 hover:scale-[1.02] bg-card"
+        "card-industrial overflow-hidden rounded-2xl group border transition-all duration-300 hover:scale-[1.02] bg-card relative",
+        glowClass
       )}>
-        <div className="flex min-h-[160px]">
+        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", priorityColor)} />
+        
+        <div className="flex min-h-[160px] pl-1.5">
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">
               <div className="flex justify-between items-center">
-                <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-muted text-muted-foreground rounded-sm border-none">
-                  {status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-muted text-muted-foreground rounded-sm border-none">
+                    {status}
+                  </Badge>
+                  {priority && (
+                    <Badge className={cn(
+                      "text-[8px] font-black uppercase px-2 py-0.5 rounded-sm border-none text-white",
+                      isUrgent ? "bg-red-600 animate-pulse" : "bg-green-600"
+                    )}>
+                      {priority}
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
                   {canEdit && (
                     <>
@@ -122,7 +142,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="flex items-center gap-1.5 overflow-hidden">
                   <UserCircle className="w-3 h-3 text-muted-foreground shrink-0" />
                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight truncate">
-                    Создал: {createdByName || '—'}
+                    {createdByName || '—'}
                   </span>
                 </div>
                 {checklist.length > 0 && (
