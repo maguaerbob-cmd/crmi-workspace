@@ -8,18 +8,21 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Search, FolderKanban, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, FolderKanban, Filter, Building2 } from 'lucide-react';
+import { DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
   const { userData } = useAuth();
   const db = useFirestore();
   const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState<string>('all');
 
   const tasksQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Теперь все видят все задачи, отсортированные по дате создания
+    // Все видят все задачи, отсортированные по дате создания
     return query(tasksRef, orderBy('createdAt', 'desc'));
   }, [db, userData]);
 
@@ -27,37 +30,72 @@ export default function Dashboard() {
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
-    const lowerSearch = search.toLowerCase();
-    return tasks.filter(task => 
-      task.title.toLowerCase().includes(lowerSearch) || 
-      task.description?.toLowerCase().includes(lowerSearch) ||
-      task.place?.toLowerCase().includes(lowerSearch)
-    );
-  }, [tasks, search]);
+    
+    let result = tasks;
+
+    // Фильтр по поисковому запросу
+    if (search.trim()) {
+      const lowerSearch = search.toLowerCase();
+      result = result.filter(task => 
+        task.title.toLowerCase().includes(lowerSearch) || 
+        task.description?.toLowerCase().includes(lowerSearch) ||
+        task.place?.toLowerCase().includes(lowerSearch)
+      );
+    }
+
+    // Фильтр по отделу
+    if (selectedDept !== 'all') {
+      result = result.filter(task => task.departmentId === selectedDept);
+    }
+
+    return result;
+  }, [tasks, search, selectedDept]);
 
   return (
     <Layout title="Задачи">
       <div className="space-y-4 max-w-5xl mx-auto">
-        <div className="flex flex-col gap-3">
-          <div className="relative group">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative group flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
             <Input 
-              placeholder="Поиск по задачам организации..." 
+              placeholder="Поиск по задачам..." 
               className="pl-9 h-11 bg-white border-slate-200 shadow-sm rounded-xl text-sm font-bold border-2 focus:border-slate-900 transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <Filter className="w-3 h-3 text-slate-400" />
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                {search ? 'Результаты поиска' : 'Общий список задач'}
-              </h2>
-            </div>
-            <div className="text-[10px] font-black text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-lg uppercase shadow-sm">
-              Всего: {filteredTasks.length}
-            </div>
+          
+          <div className="w-full md:w-72">
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger className="h-11 bg-white border-slate-200 border-2 shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-slate-400" />
+                  <SelectValue placeholder="Все отделы" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">Все отделы</SelectItem>
+                {DEPARTMENTS.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
+                    {dept.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3 h-3 text-slate-400" />
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              {selectedDept !== 'all' 
+                ? `Отдел: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}` 
+                : 'Общий список задач'}
+            </h2>
+          </div>
+          <div className="text-[10px] font-black text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-lg uppercase shadow-sm">
+            Найдено: {filteredTasks.length}
           </div>
         </div>
 
