@@ -2,14 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Получение данных профиля текущего пользователя
     function getAuthData() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
@@ -18,96 +14,51 @@ service cloud.firestore {
       return authData != null && authData.role == 'owner';
     }
 
-    /**
-     * КОЛЛЕКЦИЯ ПОЛЬЗОВАТЕЛЕЙ (userProfiles)
-     */
+    function isGlobalDept(authData) {
+      return authData != null && (authData.departmentId == 'media-center' || authData.departmentId == 'technical-service-center');
+    }
+
     match /userProfiles/{userId} {
-      // 1. Каждый может читать себя. Владелец - всех. Руководитель - свой отдел.
-      allow get: if isSignedIn() && (
-        request.auth.uid == userId || 
-        isOwner(getAuthData()) || 
-        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
-      );
-      
-      allow list: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
-      );
-
-      // 2. Регистрация разрешена только самому пользователю
+      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
+      allow list: if isSignedIn() && isOwner(getAuthData());
       allow create: if isSignedIn() && request.auth.uid == userId;
-
-      // 3. Изменение: Владелец - всё. Руководитель - свой отдел. Пользователь - только свои данные (кроме роли и отдела).
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId) ||
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'departmentId']))
       );
-
-      // 4. Удаление - только владелец
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
-    /**
-     * КОЛЛЕКЦИЯ ЗАДАЧ (tasks)
-     */
     match /tasks/{taskId} {
-      
-      // Функция проверки доступа к задаче по отделу
-      function isInUserDept(authData, taskData) {
-        return authData.departmentId == taskData.departmentId;
-      }
-
-      // 1. Чтение (get/list)
-      // Владелец видит всё. Остальные - только задачи своего отдела, если они не завершены.
       allow read: if isSignedIn() && (
-        isOwner(getAuthData()) || (
-          isInUserDept(getAuthData(), resource.data) && 
-          resource.data.status != 'завершено'
-        )
+        isOwner(getAuthData()) || 
+        isGlobalDept(getAuthData()) || 
+        (getAuthData().departmentId == resource.data.departmentId && resource.data.status != 'завершено')
       );
 
-      // 2. Создание
-      // Владелец, Руководитель или Инспектор своего отдела
       allow create: if isSignedIn() && (
-        isOwner(getAuthData()) || (
-          (getAuthData().role == 'head' || getAuthData().role == 'inspector') && 
-          getAuthData().departmentId == request.resource.data.departmentId
-        )
+        isOwner(getAuthData()) || 
+        (getAuthData().role in ['head', 'inspector'] && request.resource.data.departmentId == getAuthData().departmentId)
       );
 
-      // 3. Редактирование
       allow update: if isSignedIn() && (
-        // Владелец может редактировать любые задачи всегда
         isOwner(getAuthData()) || (
-          // Для остальных: задача не должна быть завершена для редактирования
           resource.data.status != 'завершено' && (
-            // Руководитель: всё в своем отделе
-            (getAuthData().role == 'head' && isInUserDept(getAuthData(), resource.data)) ||
-            // Инспектор: задачи, где он назначен ответственным
+            (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId) ||
             (getAuthData().role == 'inspector' && request.auth.uid == resource.data.responsibleUserId) ||
-            // Читатель: только смена статуса в своем отделе
-            (getAuthData().role == 'reader' && 
-             isInUserDept(getAuthData(), resource.data) && 
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+            (getAuthData().role == 'reader' && getAuthData().departmentId == resource.data.departmentId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
           )
         )
       );
 
-      // 4. Удаление
-      // Владелец или Руководитель своего отдела
       allow delete: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (getAuthData().role == 'head' && isInUserDept(getAuthData(), resource.data))
+        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
       );
     }
 
-    /**
-     * СПРАВОЧНИК ОТДЕЛОВ
-     */
     match /departments/{deptId} {
       allow read: if isSignedIn();
-      allow write: if false; // Только чтение
     }
   }
 }
