@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, MapPin, CheckCircle2 } from 'lucide-react';
 import { Priority, PRIORITY_COLORS, TaskStatus } from '@/lib/constants';
 import Link from 'next/link';
 
@@ -21,39 +21,43 @@ export const TaskCard: React.FC<TaskCardProps> = ({ id, title, datetime, place, 
 
   return (
     <Link href={`/tasks/${id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer border-none overflow-hidden relative">
-        <div className={`absolute top-0 left-0 w-1 h-full ${PRIORITY_COLORS[priority]}`} />
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <Badge variant={status === 'завершено' ? 'secondary' : 'outline'} className="text-[10px] uppercase font-bold">
+      <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer border-none shadow-sm overflow-hidden group">
+        <div className={`h-1.5 w-full ${PRIORITY_COLORS[priority]}`} />
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex justify-between items-start mb-2">
+            <Badge variant="secondary" className="text-[9px] uppercase font-bold px-1.5 py-0">
               {status}
             </Badge>
-            <Badge className={`${PRIORITY_COLORS[priority]} text-white text-[10px] uppercase`}>
+            <span className="text-[9px] font-bold uppercase text-muted-foreground">
               {priority}
-            </Badge>
+            </span>
           </div>
-          <CardTitle className="text-lg font-headline mt-2 line-clamp-1">{title}</CardTitle>
+          <CardTitle className="text-base font-bold line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 pb-3">
-          <div className="flex items-center text-xs text-muted-foreground gap-2">
-            <Calendar className="w-3.5 h-3.5" />
+        <CardContent className="space-y-2 pb-3 px-4">
+          <div className="flex items-center text-[11px] text-muted-foreground gap-2">
+            <Calendar className="w-3 h-3 text-primary" />
             <span>{new Date(datetime).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' })}</span>
           </div>
-          <div className="flex items-center text-xs text-muted-foreground gap-2">
-            <MapPin className="w-3.5 h-3.5" />
+          <div className="flex items-center text-[11px] text-muted-foreground gap-2">
+            <MapPin className="w-3 h-3 text-primary" />
             <span className="line-clamp-1">{place}</span>
           </div>
         </CardContent>
-        <CardFooter className="pt-0 flex flex-col items-start gap-2">
+        <CardFooter className="pt-0 pb-4 px-4 flex flex-col items-start gap-2">
           {checklist.length > 0 && (
             <div className="w-full">
-              <div className="flex justify-between text-[10px] mb-1">
-                <span>Чек-лист</span>
+              <div className="flex justify-between text-[9px] mb-1 font-bold text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-2.5 h-2.5" /> План работ
+                </span>
                 <span>{completedItems}/{checklist.length}</span>
               </div>
               <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-primary transition-all duration-300" 
+                  className="h-full bg-primary transition-all duration-500" 
                   style={{ width: `${progress}%` }} 
                 />
               </div>
