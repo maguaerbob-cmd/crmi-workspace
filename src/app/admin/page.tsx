@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Building2, UserCog } from 'lucide-react';
+import { Shield, Mail, Building2 } from 'lucide-react';
 
 export default function AdminPage() {
   const { userData } = useAuth();
@@ -107,7 +107,8 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-start lg:justify-end gap-4 sm:gap-6 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
+                  {/* Контейнер с селекторами в один ряд */}
+                  <div className="flex flex-wrap items-end gap-3 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
                     {userData?.role === 'owner' && (
                       <div className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Отдел</span>
@@ -115,7 +116,7 @@ export default function AdminPage() {
                           value={user.departmentId} 
                           onValueChange={(v) => handleDepartmentChange(user.id, v)}
                         >
-                          <SelectTrigger className="h-10 w-[200px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-white border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                          <SelectTrigger className="h-10 w-[180px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -132,7 +133,7 @@ export default function AdminPage() {
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Роль</span>
                       {user.role === 'owner' ? (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-white px-4 py-2 bg-slate-900 rounded-xl shadow-sm uppercase tracking-widest">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-white px-4 py-2.5 bg-slate-900 rounded-xl shadow-sm uppercase tracking-widest h-10">
                           <Shield className="w-3 h-3" />
                           OWNER
                         </div>
@@ -142,7 +143,7 @@ export default function AdminPage() {
                           onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
-                          <SelectTrigger className="h-10 w-[140px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-white border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                          <SelectTrigger className="h-10 w-[130px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
                             <SelectValue placeholder="Роль" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
