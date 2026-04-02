@@ -40,7 +40,7 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">C</div>
           </div>
-          <CardTitle className="text-2xl font-headline text-primary">CRMI TaskFlow</CardTitle>
+          <CardTitle className="text-2xl font-headline text-primary">CRMI WORKSPACE</CardTitle>
           <CardDescription>Введите данные для входа в систему</CardDescription>
         </CardHeader>
         <CardContent>

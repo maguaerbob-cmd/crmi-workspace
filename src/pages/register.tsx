@@ -58,7 +58,7 @@ export default function Register() {
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">C</div>
           </div>
           <CardTitle className="text-2xl font-headline text-primary">Регистрация</CardTitle>
-          <CardDescription>Создайте аккаунт для доступа к CRMI TaskFlow</CardDescription>
+          <CardDescription>Создайте аккаунт для доступа к CRMI WORKSPACE</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">

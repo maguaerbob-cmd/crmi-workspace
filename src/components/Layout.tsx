@@ -30,7 +30,7 @@ const Layout: React.FC<{ children: React.ReactNode; title?: string }> = ({ child
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white font-bold">C</div>
-            <span className="text-xl font-headline text-primary">CRMI TaskFlow</span>
+            <span className="text-xl font-headline text-primary">CRMI WORKSPACE</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
@@ -80,7 +80,7 @@ const Layout: React.FC<{ children: React.ReactNode; title?: string }> = ({ child
 
       <footer className="border-t bg-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} CRMI TaskFlow. Все права защищены.
+          &copy; {new Date().getFullYear()} CRMI WORKSPACE. Все права защищены.
         </div>
       </footer>
     </div>
