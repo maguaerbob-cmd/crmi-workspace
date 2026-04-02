@@ -16,9 +16,15 @@ interface AuthContextType {
   user: any | null;
   userData: UserData | null;
   loading: boolean;
+  authenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, userData: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  userData: null, 
+  loading: true,
+  authenticated: false 
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isUserLoading } = useUser();
@@ -34,7 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo(() => ({
     user,
     userData: profileData,
-    loading: isUserLoading || isProfileLoading,
+    loading: isUserLoading || (!!user && isProfileLoading),
+    authenticated: !!user && !!profileData,
   }), [user, profileData, isUserLoading, isProfileLoading]);
 
   return (
