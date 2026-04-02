@@ -1,9 +1,10 @@
+
 'use client';
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Edit2, MoreVertical } from 'lucide-react';
+import { Calendar, MapPin, Edit2, MoreVertical, UserCircle } from 'lucide-react';
 import { Priority, PRIORITY_COLORS, TaskStatus, STATUSES } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,11 +29,12 @@ interface TaskCardProps {
   checklist: { text: string; done: boolean }[];
   departmentId: string;
   responsibleUserId: string;
+  createdByName?: string;
   canEdit: boolean;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ 
-  id, title, datetime, place, priority, status, checklist, canEdit 
+  id, title, datetime, place, priority, status, checklist, createdByName, canEdit 
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -111,20 +113,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
           
-          {checklist.length > 0 && (
-            <div className="space-y-1.5 pt-3 border-t border-slate-50">
-              <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                <span>ПРОГРЕСС {completedItems}/{checklist.length}</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-slate-900 transition-all duration-500" 
-                  style={{ width: `${progress}%` }} 
-                />
-              </div>
+          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+            <div className="flex items-center gap-1.5">
+              <UserCircle className="w-3 h-3 text-slate-300" />
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight truncate max-w-[120px]">
+                {createdByName || '—'}
+              </span>
             </div>
-          )}
+            {checklist.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </Link>

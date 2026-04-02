@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -113,6 +114,7 @@ export default function Dashboard() {
                 key={task.id} 
                 {...task} 
                 datetime={task.dateTime} 
+                createdByName={task.createdByName}
                 canEdit={userData?.role === 'owner' || userData?.id === task.responsibleUserId || userData?.id === task.createdBy}
               />
             ))}

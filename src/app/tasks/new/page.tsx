@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -34,7 +35,6 @@ export default function NewTask() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
-    // Листинг пользователей своего отдела для назначения ответственного
     return query(collection(db, 'userProfiles'), where('departmentId', '==', userData.departmentId));
   }, [db, userData]);
 
@@ -65,20 +65,21 @@ export default function NewTask() {
       status: 'запланировано',
       departmentId: userData.departmentId,
       responsibleUserId,
-      createdBy: user.uid, // Критично для правил доступа (Инспектор)
+      createdBy: user.uid,
+      createdByName: userData.name || 'Сотрудник',
       checklist,
       createdAt: new Date().toISOString()
     });
     
-    toast({ title: "Успех", description: "Задача создана в базе организации" });
+    toast({ title: "УСПЕХ", description: "ЗАДАЧА СОЗДАНА В БАЗЕ ОРГАНИЗАЦИИ" });
     router.push('/');
   };
 
   return (
     <Layout title="Новая задача">
       <div className="max-w-3xl mx-auto pb-20">
-        <Card className="border-2 border-slate-200 shadow-xl overflow-hidden bg-white rounded-3xl">
-          <div className="h-2 bg-slate-900 w-full" />
+        <Card className="border-none shadow-sm overflow-hidden bg-white rounded-3xl">
+          <div className="h-2 bg-slate-950 w-full" />
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-2">
@@ -96,7 +97,7 @@ export default function NewTask() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-4 h-4 text-slate-900" />
+                    <Calendar className="w-4 h-4 text-slate-950" />
                     <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Срок исполнения</Label>
                   </div>
                   <Input 
@@ -111,7 +112,7 @@ export default function NewTask() {
                 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="w-4 h-4 text-slate-900" />
+                    <MapPin className="w-4 h-4 text-slate-950" />
                     <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Место выполнения</Label>
                   </div>
                   <Input 
@@ -126,7 +127,7 @@ export default function NewTask() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <Flag className="w-4 h-4 text-slate-900" />
+                    <Flag className="w-4 h-4 text-slate-950" />
                     <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Приоритет</Label>
                   </div>
                   <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
@@ -141,7 +142,7 @@ export default function NewTask() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <UserIcon className="w-4 h-4 text-slate-900" />
+                    <UserIcon className="w-4 h-4 text-slate-950" />
                     <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Исполнитель</Label>
                   </div>
                   <Select value={responsibleUserId} onValueChange={setResponsibleUserId} required>
@@ -177,14 +178,14 @@ export default function NewTask() {
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCheckItem())}
                       className="h-12 border-slate-200 bg-slate-50 rounded-xl shadow-inner font-bold"
                     />
-                    <Button type="button" onClick={handleAddCheckItem} className="h-12 w-12 rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg shrink-0">
+                    <Button type="button" onClick={handleAddCheckItem} className="h-12 w-12 rounded-xl bg-slate-950 text-white hover:bg-slate-900 shadow-lg shrink-0">
                       <Plus className="w-6 h-6" />
                     </Button>
                   </div>
 
                   <div className="grid gap-2">
                     {checklist.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white border-2 border-slate-100 px-4 py-3 rounded-xl group hover:border-slate-200 transition-all">
+                      <div key={index} className="flex items-center justify-between bg-white border border-slate-100 px-4 py-3 rounded-xl group hover:border-slate-200 transition-all">
                         <span className="text-sm font-bold text-slate-800">{item.text}</span>
                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => handleRemoveCheckItem(index)}>
                           <X className="h-5 h-5" />
@@ -196,7 +197,7 @@ export default function NewTask() {
               </div>
 
               <div className="pt-8 flex flex-col sm:flex-row gap-4">
-                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-900 text-white shadow-2xl hover:bg-slate-800">
+                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-950 text-white shadow-lg hover:bg-slate-900">
                   {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : "Создать задачу"}
                 </Button>
                 <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-2" onClick={() => router.back()}>
