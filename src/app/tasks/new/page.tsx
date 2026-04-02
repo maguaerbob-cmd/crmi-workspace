@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { PRIORITIES, TaskPriority } from '@/lib/constants';
 
 export default function NewTask() {
@@ -25,12 +26,20 @@ export default function NewTask() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [datetime, setDatetime] = useState('');
+  // Разделяем дату и время для упрощения ввода
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('09:00');
   const [place, setPlace] = useState('');
   const [responsibleUserId, setResponsibleUserId] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('не срочно');
   const [checklist, setChecklist] = useState<{ text: string; done: boolean }[]>([]);
   const [newCheckItem, setNewCheckItem] = useState('');
+
+  // Устанавливаем текущую дату по умолчанию
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setDate(today);
+  }, []);
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
@@ -55,10 +64,14 @@ export default function NewTask() {
     if (!db || !userData || !user || isSubmitting) return;
     
     setIsSubmitting(true);
+    
+    // Собираем ISO строку из даты и времени
+    const combinedDateTime = `${date}T${time}`;
+
     addDocumentNonBlocking(collection(db, 'tasks'), {
       title,
       description,
-      dateTime: datetime,
+      dateTime: combinedDateTime,
       place,
       status: 'запланировано',
       priority,
@@ -97,14 +110,27 @@ export default function NewTask() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Calendar className="w-4 h-4 text-foreground" />
-                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Срок исполнения</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Дата исполнения</Label>
                   </div>
                   <Input 
-                    id="datetime" 
-                    type="datetime-local" 
+                    type="date" 
                     required 
-                    value={datetime} 
-                    onChange={(e) => setDatetime(e.target.value)} 
+                    value={date} 
+                    onChange={(e) => setDate(e.target.value)} 
+                    className="h-12 border-border bg-background rounded-xl font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="w-4 h-4 text-foreground" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Время</Label>
+                  </div>
+                  <Input 
+                    type="time" 
+                    required 
+                    value={time} 
+                    onChange={(e) => setTime(e.target.value)} 
                     className="h-12 border-border bg-background rounded-xl font-bold"
                   />
                 </div>

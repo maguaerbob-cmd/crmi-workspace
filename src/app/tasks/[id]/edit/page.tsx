@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, User as UserIcon, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { PRIORITIES, TaskPriority } from '@/lib/constants';
 
 export default function EditTask() {
@@ -33,7 +34,9 @@ export default function EditTask() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [datetime, setDatetime] = useState('');
+  // Разделяем дату и время
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('09:00');
   const [place, setPlace] = useState('');
   const [responsibleUserId, setResponsibleUserId] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('не срочно');
@@ -44,7 +47,14 @@ export default function EditTask() {
     if (task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
-      setDatetime(task.dateTime || '');
+      
+      // Парсим ISO строку из базы данных
+      if (task.dateTime) {
+        const [d, t] = task.dateTime.split('T');
+        setDate(d || '');
+        setTime(t ? t.substring(0, 5) : '09:00');
+      }
+      
       setPlace(task.place || '');
       setResponsibleUserId(task.responsibleUserId || '');
       setPriority(task.priority || 'не срочно');
@@ -74,10 +84,13 @@ export default function EditTask() {
     e.preventDefault();
     if (!taskRef || !userData) return;
     
+    // Собираем ISO строку обратно
+    const combinedDateTime = `${date}T${time}`;
+
     updateDocumentNonBlocking(taskRef as DocumentReference, {
       title,
       description,
-      dateTime: datetime,
+      dateTime: combinedDateTime,
       place,
       priority,
       responsibleUserId,
@@ -117,14 +130,27 @@ export default function EditTask() {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-foreground" />
-                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Дата</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Дата</Label>
                   </div>
                   <Input 
-                    id="datetime" 
-                    type="datetime-local" 
+                    type="date" 
                     required 
-                    value={datetime} 
-                    onChange={(e) => setDatetime(e.target.value)} 
+                    value={date} 
+                    onChange={(e) => setDate(e.target.value)} 
+                    className="h-10 border-border bg-background rounded-lg"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-foreground" />
+                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Время</Label>
+                  </div>
+                  <Input 
+                    type="time" 
+                    required 
+                    value={time} 
+                    onChange={(e) => setTime(e.target.value)} 
                     className="h-10 border-border bg-background rounded-lg"
                   />
                 </div>
