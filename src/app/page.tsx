@@ -35,14 +35,26 @@ export default function Dashboard() {
     if (!db) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Если пользователь не авторизован или является глобальным админом - показываем всё
-    if (!user || isGlobalManager) {
+    // Если пользователь не авторизован - показываем всё (публичный доступ)
+    if (!user) {
+      return query(tasksRef, orderBy('createdAt', 'desc'));
+    }
+
+    // Если пользователь авторизован, но данные профиля еще грузятся - ждем,
+    // чтобы не передать undefined в isGlobalManager или фильтры
+    if (!userData) return null;
+
+    // Глобальные админы видят всё
+    if (isGlobalManager) {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
-      // Обычные сотрудники видят только задачи своего отдела (требование правил Firestore)
+      // Обычные сотрудники видят только задачи своего отдела
+      // Важно: проверяем наличие departmentId, чтобы избежать ошибки "Unsupported field value: undefined"
+      if (!userData.departmentId) return null;
+
       return query(
         tasksRef, 
-        where('departmentId', '==', userData?.departmentId),
+        where('departmentId', '==', userData.departmentId),
         orderBy('createdAt', 'desc')
       );
     }
@@ -141,7 +153,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-muted-foreground" />
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              {(!isGlobalManager && user) ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData?.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
+              {(!isGlobalManager && user && userData) ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
             </h2>
           </div>
           <div className="text-[10px] font-black text-primary-foreground bg-foreground px-3 py-1 uppercase rounded-sm">
