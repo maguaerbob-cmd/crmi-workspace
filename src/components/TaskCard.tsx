@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, CheckCircle2, Edit2, MoreVertical } from 'lucide-react';
+import { Calendar, MapPin, Edit2, MoreVertical, CheckCircle2 } from 'lucide-react';
 import { Priority, PRIORITY_COLORS, TaskStatus, STATUSES } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -46,7 +46,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     e.stopPropagation();
     const taskRef = doc(db, 'tasks', id);
     updateDocumentNonBlocking(taskRef, { status: newStatus });
-    toast({ title: "Статус обновлен", description: `Задача: ${newStatus}` });
+    toast({ title: "Статус обновлен", description: `${newStatus}` });
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -57,21 +57,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <Link href={`/tasks/${id}`}>
-      <Card className="hover:shadow-md transition-all duration-200 cursor-pointer border border-slate-200 shadow-sm overflow-hidden group bg-white">
+      <Card className="hover:border-slate-400 transition-all duration-200 cursor-pointer border border-slate-200 shadow-sm overflow-hidden group bg-white">
         <div className={`h-1 w-full ${PRIORITY_COLORS[priority]}`} />
-        <CardHeader className="p-3 pb-1">
-          <div className="flex justify-between items-start">
-            <div className="flex flex-wrap gap-1">
-              <Badge variant="outline" className="text-[8px] uppercase font-bold px-1.5 py-0 border-slate-300 text-slate-600 bg-slate-50">
-                {status}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-1">
+        <CardHeader className="p-3 pb-1 space-y-1">
+          <div className="flex justify-between items-center">
+            <Badge variant="secondary" className="text-[8px] font-black uppercase px-1.5 py-0 bg-slate-100 text-slate-600 rounded">
+              {status}
+            </Badge>
+            <div className="flex items-center gap-0.5">
               {canEdit && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-6 w-6 text-slate-400 hover:text-primary"
+                  className="h-6 w-6 text-slate-400 hover:text-slate-900"
                   onClick={handleEditClick}
                 >
                   <Edit2 className="w-3 h-3" />
@@ -83,40 +81,40 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     <MoreVertical className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="min-w-[120px]">
                   {STATUSES.map((s) => (
                     <DropdownMenuItem 
                       key={s} 
                       onClick={(e) => handleStatusChange(e as any, s)}
-                      className={status === s ? "bg-slate-100 font-bold" : ""}
+                      className={`text-[10px] font-bold uppercase ${status === s ? "bg-slate-100" : ""}`}
                     >
-                      Статус: {s}
+                      {s}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
-          <CardTitle className="text-sm font-bold line-clamp-1 mt-1 text-slate-900 group-hover:text-primary transition-colors">
+          <CardTitle className="text-xs font-black line-clamp-1 text-slate-900 group-hover:text-slate-700">
             {title}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 pt-0 space-y-1.5">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center text-[10px] text-slate-500 gap-1.5">
-              <Calendar className="w-3 h-3 text-slate-400" />
-              <span>{new Date(datetime).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</span>
+        <CardContent className="p-3 pt-0 space-y-2">
+          <div className="space-y-0.5">
+            <div className="flex items-center text-[9px] font-bold text-slate-500 gap-1.5">
+              <Calendar className="w-2.5 h-2.5 text-slate-400" />
+              <span>{new Date(datetime).toLocaleDateString('ru-RU')} {new Date(datetime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
-            <div className="flex items-center text-[10px] text-slate-500 gap-1.5">
-              <MapPin className="w-3 h-3 text-slate-400" />
+            <div className="flex items-center text-[9px] font-bold text-slate-500 gap-1.5">
+              <MapPin className="w-2.5 h-2.5 text-slate-400" />
               <span className="truncate">{place}</span>
             </div>
           </div>
           
           {checklist.length > 0 && (
-            <div className="pt-1">
-              <div className="flex justify-between text-[8px] mb-0.5 font-bold text-slate-400">
-                <span>ПЛАН {completedItems}/{checklist.length}</span>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+                <span>ПРОГРЕСС {completedItems}/{checklist.length}</span>
                 <span>{Math.round(progress)}%</span>
               </div>
               <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">

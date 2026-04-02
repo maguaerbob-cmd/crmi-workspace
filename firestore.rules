@@ -3,38 +3,34 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * FIRESTORE SECURITY RULES
-     * Оптимизировано для производительности и безопасности.
+     * СТРОГИЕ ПРАВИЛА ДОСТУПА CRMI
      */
-
-    // --- HELPER FUNCTIONS ---
 
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
     }
 
     function getAuthData() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    // Проверка глобальных ролей и спец. отделов
+    // Глобальный доступ: Владелец или спец. отделы
     function hasGlobalAccess(authData) {
-      return authData.role == 'owner' || 
-             authData.departmentId == 'technical-service-center' || 
-             authData.departmentId == 'media-center';
+      return authData != null && (
+        authData.role == 'owner' || 
+        authData.departmentId == 'technical-service-center' || 
+        authData.departmentId == 'media-center'
+      );
     }
 
-    // --- COLLECTION RULES ---
-
     match /userProfiles/{userId} {
-      allow get: if isOwner(userId) || hasGlobalAccess(getAuthData());
-      allow list: if isOwner(userId) || hasGlobalAccess(getAuthData());
-      allow create: if isOwner(userId);
-      allow update: if isSignedIn() && (isOwner(userId) || hasGlobalAccess(getAuthData()) || (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId));
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || hasGlobalAccess(getAuthData()));
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (
+        request.auth.uid == userId || 
+        hasGlobalAccess(getAuthData()) || 
+        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
+      );
       allow delete: if isSignedIn() && hasGlobalAccess(getAuthData()) && getAuthData().role == 'owner';
     }
 
@@ -45,29 +41,30 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       
-      function canReadTask(authData, taskData) {
+      function canRead(authData, taskData) {
         return hasGlobalAccess(authData) || authData.departmentId == taskData.departmentId;
       }
 
-      function canModifyTask(authData, taskData) {
-        return authData.role == 'owner' || (authData.role == 'head' && authData.departmentId == taskData.departmentId);
-      }
-
-      function canCreateTask(authData, taskData) {
-        return authData.role == 'owner' || ((authData.role == 'head' || authData.role == 'inspector') && authData.departmentId == taskData.departmentId);
-      }
-
-      // get и list используют одну логику доступа по отделу
-      allow get, list: if isSignedIn() && canReadTask(getAuthData(), resource.data);
+      // Доступ на чтение
+      allow get: if isSignedIn() && canRead(getAuthData(), resource.data);
+      // Для list важно, чтобы запрос на клиенте содержал фильтр по departmentId (для не-админов)
+      allow list: if isSignedIn() && (hasGlobalAccess(getAuthData()) || getAuthData().departmentId == resource.data.departmentId);
       
-      allow create: if isSignedIn() && canCreateTask(getAuthData(), request.resource.data);
+      allow create: if isSignedIn() && (
+        hasGlobalAccess(getAuthData()) || 
+        ((getAuthData().role == 'head' || getAuthData().role == 'inspector') && getAuthData().departmentId == request.resource.data.departmentId)
+      );
       
       allow update: if isSignedIn() && (
-        canModifyTask(getAuthData(), resource.data) || 
+        hasGlobalAccess(getAuthData()) || 
+        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId) || 
         (request.auth.uid == resource.data.responsibleUserId && resource.data.status != 'завершено')
       );
       
-      allow delete: if isSignedIn() && canModifyTask(getAuthData(), resource.data);
+      allow delete: if isSignedIn() && (
+        hasGlobalAccess(getAuthData()) || 
+        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
+      );
     }
   }
 }
