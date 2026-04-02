@@ -14,13 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Calendar, MapPin, Flag, User as UserIcon } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, Flag, User as UserIcon, Loader2 } from 'lucide-react';
 
 export default function NewTask() {
   const { userData } = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -51,8 +52,9 @@ export default function NewTask() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db || !userData) return;
+    if (!db || !userData || isSubmitting) return;
     
+    setIsSubmitting(true);
     addDocumentNonBlocking(collection(db, 'tasks'), {
       title,
       description,
@@ -66,33 +68,34 @@ export default function NewTask() {
       createdAt: new Date().toISOString()
     });
     
-    toast({ title: "Успех", description: "Задача успешно создана" });
+    toast({ title: "Успех", description: "Задача успешно создана в рабочем пространстве" });
     router.push('/');
   };
 
   return (
     <Layout title="Новая задача">
-      <div className="max-w-2xl mx-auto pb-10">
-        <Card className="border border-slate-200 shadow-sm overflow-hidden bg-white rounded-xl">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-1.5">
-                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Название</Label>
+      <div className="max-w-3xl mx-auto pb-20">
+        <Card className="border-2 border-slate-200 shadow-xl overflow-hidden bg-white rounded-3xl">
+          <div className="h-2 bg-slate-900 w-full" />
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Заголовок задачи</Label>
                 <Input 
                   id="title" 
                   required 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Введите название..." 
-                  className="h-10 text-base font-bold border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-lg"
+                  placeholder="Назовите задачу кратко и ясно..." 
+                  className="h-12 text-lg font-black border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Дата</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-slate-900" />
+                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата и время</Label>
                   </div>
                   <Input 
                     id="datetime" 
@@ -100,101 +103,106 @@ export default function NewTask() {
                     required 
                     value={datetime} 
                     onChange={(e) => setDatetime(e.target.value)} 
-                    className="h-10 border-slate-200 bg-white rounded-lg"
+                    className="h-12 border-slate-200 bg-white rounded-xl font-bold"
                   />
                 </div>
                 
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Место</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4 text-slate-900" />
+                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Локация</Label>
                   </div>
                   <Input 
                     id="place" 
                     required 
                     value={place} 
                     onChange={(e) => setPlace(e.target.value)} 
-                    placeholder="Локация..." 
-                    className="h-10 border-slate-200 bg-white rounded-lg"
+                    placeholder="Место проведения..." 
+                    className="h-12 border-slate-200 bg-white rounded-xl font-bold"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <Flag className="w-3.5 h-3.5 text-slate-500" />
-                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Приоритет</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Flag className="w-4 h-4 text-slate-900" />
+                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Важность</Label>
                   </div>
                   <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                    <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
+                    <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {PRIORITIES.map(p => <SelectItem key={p} value={p} className="uppercase font-bold text-[10px]">{p}</SelectItem>)}
+                      {PRIORITIES.map(p => <SelectItem key={p} value={p} className="uppercase font-black text-[10px] tracking-widest">{p}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <UserIcon className="w-3.5 h-3.5 text-slate-500" />
-                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Ответственный</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserIcon className="w-4 h-4 text-slate-900" />
+                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ответственный</Label>
                   </div>
                   <Select value={responsibleUserId} onValueChange={setResponsibleUserId} required>
-                    <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
-                      <SelectValue placeholder="Выбрать" />
+                    <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
+                      <SelectValue placeholder="Выберите сотрудника" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                      {users?.map(u => <SelectItem key={u.id} value={u.id} className="font-bold">{u.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Описание</Label>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Техническое задание / Описание</Label>
                   <Textarea 
                     id="description" 
                     required 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
-                    placeholder="Детали задачи..."
-                    className="min-h-[100px] border-slate-200 bg-white rounded-lg p-3 text-sm" 
+                    placeholder="Подробно опишите задачу и требования..."
+                    className="min-h-[150px] border-slate-200 bg-white rounded-xl p-4 text-sm font-medium leading-relaxed" 
                   />
                 </div>
 
-                <div className="space-y-3 md:col-span-2 pt-2">
-                  <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Чек-лист</Label>
+                <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Чек-лист исполнения</Label>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Input 
-                      placeholder="Добавить пункт..." 
+                      placeholder="Добавить новый пункт..." 
                       value={newCheckItem} 
                       onChange={(e) => setNewCheckItem(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCheckItem())}
-                      className="h-10 border-slate-200 bg-white rounded-lg shadow-sm"
+                      className="h-12 border-slate-200 bg-slate-50 rounded-xl shadow-inner font-bold"
                     />
-                    <Button type="button" onClick={handleAddCheckItem} variant="secondary" className="h-10 rounded-lg px-4 bg-slate-900 text-white hover:bg-slate-800">
-                      <Plus className="w-4 h-4" />
+                    <Button type="button" onClick={handleAddCheckItem} className="h-12 w-12 rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg shrink-0">
+                      <Plus className="w-6 h-6" />
                     </Button>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="grid gap-2">
                     {checklist.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between bg-slate-50 border border-slate-100 px-3 py-2 rounded-lg group">
-                        <span className="text-xs font-semibold text-slate-700">{item.text}</span>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleRemoveCheckItem(index)}>
-                          <X className="h-4 w-4" />
+                      <div key={index} className="flex items-center justify-between bg-white border-2 border-slate-100 px-4 py-3 rounded-xl group hover:border-slate-200 transition-all">
+                        <span className="text-sm font-bold text-slate-800">{item.text}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-destructive/5" onClick={() => handleRemoveCheckItem(index)}>
+                          <X className="h-5 h-5" />
                         </Button>
                       </div>
                     ))}
+                    {checklist.length === 0 && (
+                      <div className="text-center py-6 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Список пуст</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 flex flex-col sm:flex-row gap-2">
-                <Button type="submit" className="flex-1 h-11 rounded-lg text-xs font-bold uppercase tracking-widest bg-slate-900 text-white shadow-md">
-                  Создать
+              <div className="pt-8 flex flex-col sm:flex-row gap-4">
+                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-900 text-white shadow-2xl hover:bg-slate-800 transition-all">
+                  {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : "Опубликовать задачу"}
                 </Button>
-                <Button type="button" variant="outline" className="h-11 px-8 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-500" onClick={() => router.back()}>
+                <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-2 hover:bg-slate-50" onClick={() => router.back()}>
                   Отмена
                 </Button>
               </div>

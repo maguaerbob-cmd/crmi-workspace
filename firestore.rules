@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Вспомогательные функции
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,46 +15,58 @@ service cloud.firestore {
       return authData != null && authData.role == 'owner';
     }
 
+    function isHead(authData) {
+      return authData != null && authData.role == 'head';
+    }
+
     function isGlobalDept(authData) {
       return authData != null && (authData.departmentId == 'media-center' || authData.departmentId == 'technical-service-center');
     }
 
+    // Коллекция пользователей
     match /userProfiles/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
-      allow list: if isSignedIn() && isOwner(getAuthData());
+      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()) || (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId));
+      allow list: if isSignedIn() && (isOwner(getAuthData()) || isHead(getAuthData()));
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || 
+        (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId) ||
         (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'departmentId']))
       );
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
+    // Коллекция задач
     match /tasks/{taskId} {
+      // Чтение разрешено владельцам, спец-отделам и сотрудникам своего отдела (кроме завершенных для обычных ролей)
       allow read: if isSignedIn() && (
         isOwner(getAuthData()) || 
         isGlobalDept(getAuthData()) || 
-        (getAuthData().departmentId == resource.data.departmentId && resource.data.status != 'завершено')
+        (getAuthData().departmentId == resource.data.departmentId && (resource.data.status != 'завершено' || isHead(getAuthData())))
       );
 
+      // Создание: владелец, руководитель или инспектор своего отдела
       allow create: if isSignedIn() && (
         isOwner(getAuthData()) || 
         (getAuthData().role in ['head', 'inspector'] && request.resource.data.departmentId == getAuthData().departmentId)
       );
 
+      // Обновление: владелец, руководитель отдела, или инспектор (свои задачи)
+      // Читатель может менять ТОЛЬКО статус
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || (
           resource.data.status != 'завершено' && (
-            (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId) ||
-            (getAuthData().role == 'inspector' && request.auth.uid == resource.data.responsibleUserId) ||
+            (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId) ||
+            (getAuthData().role == 'inspector' && (request.auth.uid == resource.data.responsibleUserId || request.auth.uid == resource.id)) ||
             (getAuthData().role == 'reader' && getAuthData().departmentId == resource.data.departmentId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
           )
         )
       );
 
+      // Удаление: владелец или руководитель отдела
       allow delete: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId)
+        (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId)
       );
     }
 
