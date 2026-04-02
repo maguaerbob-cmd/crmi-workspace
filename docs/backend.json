@@ -32,6 +32,10 @@
           "type": "string",
           "description": "Reference to the Department entity the user belongs to. (Relationship: Department 1:N UserProfile)"
         },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Whether the user's registration has been approved by an administrator."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user profile was created.",
@@ -44,6 +48,7 @@
         "email",
         "role",
         "departmentId",
+        "isApproved",
         "createdAt"
       ]
     },

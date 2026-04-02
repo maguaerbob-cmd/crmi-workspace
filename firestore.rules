@@ -1,8 +1,8 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Вспомогательные функции
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,8 +11,9 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    function isNotReader() {
-      return getUserData().role != 'reader';
+    function isApproved() {
+      let data = getUserData();
+      return data.isApproved == true || data.role == 'owner';
     }
 
     function isGlobalManager() {
@@ -20,7 +21,6 @@ service cloud.firestore {
       return role == 'owner' || role == 'director' || role == 'deputy_director';
     }
 
-    // Профили пользователей
     match /userProfiles/{userId} {
       allow read, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -31,24 +31,19 @@ service cloud.firestore {
       allow delete: if isSignedIn() && getUserData().role == 'owner';
     }
 
-    // Задачи
     match /tasks/{taskId} {
-      allow read, list: if isSignedIn();
+      allow read, list: if isSignedIn() && isApproved();
       
-      // Читатель не может создавать задачи
-      allow create: if isSignedIn() && isNotReader();
+      allow create: if isSignedIn() && isApproved() && getUserData().role != 'reader';
       
-      allow update: if isSignedIn() && isNotReader() && (
+      allow update: if isSignedIn() && isApproved() && getUserData().role != 'reader' && (
         isGlobalManager() || 
         request.auth.uid == resource.data.createdBy || 
         request.auth.uid == resource.data.responsibleUserId ||
         (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)
       );
       
-      // Логика удаления:
-      // 1. Глобальные менеджеры могут всё
-      // 2. Создатель или Руководитель отдела могут удалять только НЕ завершенные задачи
-      allow delete: if isSignedIn() && isNotReader() && (
+      allow delete: if isSignedIn() && isApproved() && getUserData().role != 'reader' && (
         isGlobalManager() || 
         (
           (request.auth.uid == resource.data.createdBy || 

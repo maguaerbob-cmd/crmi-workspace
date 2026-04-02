@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useMemo } from 'react';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, DocumentReference } from 'firebase/firestore';
@@ -9,6 +10,7 @@ interface UserData {
   email: string;
   role: Role;
   departmentId: string;
+  isApproved: boolean;
   createdAt: string;
 }
 

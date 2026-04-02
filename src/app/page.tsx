@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -9,7 +10,7 @@ import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FolderKanban, Filter, Building2 } from 'lucide-react';
+import { Search, FolderKanban, Filter, Building2, Clock } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [selectedDept, setSelectedDept] = useState<string>('all');
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!db || !userData) return null;
+    if (!db || !userData || !userData.isApproved) return null;
     const tasksRef = collection(db, 'tasks');
     return query(tasksRef, orderBy('createdAt', 'desc'));
   }, [db, userData]);
@@ -56,6 +57,30 @@ export default function Dashboard() {
 
     return result;
   }, [tasks, search, selectedDept, isGlobalManager]);
+
+  // Если пользователь не одобрен
+  if (userData && !userData.isApproved && userData.role !== 'owner') {
+    return (
+      <Layout title="Ожидание доступа">
+        <div className="flex flex-col items-center justify-center py-32 text-center max-w-md mx-auto space-y-6">
+          <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center animate-pulse">
+            <Clock className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-black uppercase tracking-tight">Доступ ограничен</h1>
+            <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed">
+              Ваш аккаунт {userData.name} успешно создан, но требует подтверждения администратором.
+            </p>
+          </div>
+          <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              Пожалуйста, свяжитесь с руководителем вашего отдела для ускорения процесса активации.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="Задачи">
@@ -133,7 +158,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 bg-card rounded-3xl shadow-sm border border-border border-dashed">
-            <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
               <FolderKanban className="w-8 h-8 text-muted-foreground" />
             </div>
             <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.4em]">ЗАДАЧ НЕ НАЙДЕНО</p>
