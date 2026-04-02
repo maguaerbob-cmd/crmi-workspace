@@ -21,12 +21,8 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    function hasRole(role) {
-      return isSignedIn() && getAuthData().role == role;
-    }
-
     function isGlobalAdmin() {
-      return hasRole('owner');
+      return isSignedIn() && getAuthData().role == 'owner';
     }
 
     function isSpecialDepartment() {
@@ -36,6 +32,10 @@ service cloud.firestore {
 
     function isUserInDepartment(deptId) {
       return isSignedIn() && getAuthData().departmentId == deptId;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && getAuthData().role == role;
     }
 
     // --- COLLECTION RULES ---
@@ -56,19 +56,32 @@ service cloud.firestore {
     match /tasks/{taskId} {
       
       function canReadTask(data) {
-        return isGlobalAdmin() || isSpecialDepartment() || (isUserInDepartment(data.departmentId) && data.status != 'завершено');
+        let authData = getAuthData();
+        return authData.role == 'owner' || 
+               authData.departmentId == 'technical-service-center' || 
+               authData.departmentId == 'media-center' || 
+               (authData.departmentId == data.departmentId && data.status != 'завершено');
       }
 
       function canModifyTask(data) {
-        return isGlobalAdmin() || (hasRole('head') && isUserInDepartment(data.departmentId));
+        let authData = getAuthData();
+        return authData.role == 'owner' || (authData.role == 'head' && authData.departmentId == data.departmentId);
       }
 
       function canCreateTask(data) {
-        return isGlobalAdmin() || ((hasRole('head') || hasRole('inspector')) && isUserInDepartment(data.departmentId));
+        let authData = getAuthData();
+        return authData.role == 'owner' || ((authData.role == 'head' || authData.role == 'inspector') && authData.departmentId == data.departmentId);
       }
 
       allow get: if canReadTask(resource.data);
-      allow list: if isGlobalAdmin() || isSpecialDepartment() || isUserInDepartment(getAuthData().departmentId);
+      
+      // Исправлено: для корректной работы запросов list правила должны проверять данные документа (resource.data)
+      allow list: if isSignedIn() && (
+        isGlobalAdmin() || 
+        isSpecialDepartment() || 
+        (resource.data.departmentId == getAuthData().departmentId)
+      );
+      
       allow create: if canCreateTask(request.resource.data);
       allow update: if resource != null && (canModifyTask(resource.data) || (isOwner(resource.data.responsibleUserId) && resource.data.status != 'завершено'));
       allow delete: if resource != null && canModifyTask(resource.data);
