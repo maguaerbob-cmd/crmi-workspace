@@ -165,6 +165,18 @@
         "createdByName",
         "createdAt"
       ]
+    },
+    "AppSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AppSettings",
+      "type": "object",
+      "description": "Global settings for the CRMI workspace.",
+      "properties": {
+        "logoURL": {
+          "type": "string",
+          "description": "Base64 or URL of the application logo."
+        }
+      }
     }
   },
   "auth": {
@@ -219,6 +231,22 @@
             {
               "name": "taskId",
               "description": "The unique identifier for a specific task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AppSettings"
+          },
+          "description": "Global application configuration.",
+          "params": [
+            {
+              "name": "settingId",
+              "description": "The identifier for the setting document (e.g., 'app')."
             }
           ]
         }

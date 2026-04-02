@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -11,8 +12,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,8 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   const pathname = usePathname();
   const auth = useFirebaseCore();
   const { theme, toggleTheme } = useTheme();
-
-  const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
+  const { logo } = useAppSettings();
 
   useEffect(() => {
     if (!loading && !user && !['/login', '/register'].includes(pathname)) {
@@ -42,14 +42,12 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
-  // Кто может создавать задачи
   const canCreate = userData?.role === 'owner' || 
                     userData?.role === 'director' || 
                     userData?.role === 'deputy_director' || 
                     userData?.role === 'head' || 
                     userData?.role === 'inspector';
 
-  // Кто может видеть список сотрудников
   const canSeeStaff = userData?.role === 'owner' || 
                       userData?.role === 'director' || 
                       userData?.role === 'deputy_director' || 
@@ -77,11 +75,10 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
             {logo && (
               <div className="relative w-10 h-10">
                 <Image 
-                  src={logo.imageUrl} 
+                  src={logo} 
                   alt="CRMI Logo" 
                   fill 
                   className="object-contain"
-                  data-ai-hint={logo.imageHint}
                 />
               </div>
             )}
@@ -146,11 +143,10 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
             logo && (
               <div className="relative w-8 h-8">
                 <Image 
-                  src={logo.imageUrl} 
+                  src={logo} 
                   alt="CRMI Logo" 
                   fill 
                   className="object-contain"
-                  data-ai-hint={logo.imageHint}
                 />
               </div>
             )

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuth as useFirebaseCore, updateDocumentNonBlocking, useFirestore } from '@/firebase';
+import { useAuth as useFirebaseCore, updateDocumentNonBlocking, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut, Building, ShieldCheck, Mail, Calendar, Edit2, Check, X, Camera, Loader2 } from 'lucide-react';
+import { LogOut, Building, ShieldCheck, Mail, Calendar, Edit2, Check, X, Camera, Loader2, Settings } from 'lucide-react';
 import { DEPARTMENTS, ROLE_LABELS, Role } from '@/lib/constants';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 export default function ProfilePage() {
   const { userData } = useAuth();
@@ -26,14 +26,15 @@ export default function ProfilePage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { logo } = useAppSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-
-  const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -60,11 +61,11 @@ export default function ProfilePage() {
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'logo') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 1024 * 1024) { // Лимит 1MB для Firestore Base64
+    if (file.size > 1024 * 1024) {
       toast({
         variant: "destructive",
         title: "ФАЙЛ СЛИШКОМ БОЛЬШОЙ",
@@ -73,24 +74,28 @@ export default function ProfilePage() {
       return;
     }
 
-    setIsUploading(true);
+    if (type === 'avatar') setIsUploading(true);
+    else setIsLogoUploading(true);
+
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
-      setEditPhotoURL(base64String);
-      setIsUploading(false);
-      toast({
-        title: "ФОТО ВЫБРАНО",
-        description: "Нажмите 'Сохранить', чтобы применить изменения."
-      });
+      if (type === 'avatar') {
+        setEditPhotoURL(base64String);
+        setIsUploading(false);
+        toast({ title: "ФОТО ВЫБРАНО", description: "Нажмите 'Сохранить', чтобы применить изменения." });
+      } else {
+        if (db) {
+          setDocumentNonBlocking(doc(db, 'settings', 'app'), { logoURL: base64String }, { merge: true });
+          setIsLogoUploading(false);
+          toast({ title: "ЛОГОТИП ОБНОВЛЕН", description: "Новый логотип применен для всей организации." });
+        }
+      }
     };
     reader.onerror = () => {
-      setIsUploading(false);
-      toast({
-        variant: "destructive",
-        title: "ОШИБКА ЧТЕНИЯ",
-        description: "Не удалось прочитать файл."
-      });
+      if (type === 'avatar') setIsUploading(false);
+      else setIsLogoUploading(false);
+      toast({ variant: "destructive", title: "ОШИБКА ЧТЕНИЯ", description: "Не удалось прочитать файл." });
     };
     reader.readAsDataURL(file);
   };
@@ -103,17 +108,16 @@ export default function ProfilePage() {
 
   return (
     <Layout title="Профиль">
-      <div className="max-w-xl mx-auto space-y-6">
+      <div className="max-w-xl mx-auto space-y-6 pb-20">
         <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
           <div className="h-16 bg-muted/30 border-b flex items-center justify-center">
             {logo && (
               <div className="relative w-8 h-8 opacity-80">
                 <Image 
-                  src={logo.imageUrl} 
+                  src={logo} 
                   alt="CRMI Logo" 
                   fill 
                   className="object-contain"
-                  data-ai-hint={logo.imageHint}
                 />
               </div>
             )}
@@ -144,7 +148,7 @@ export default function ProfilePage() {
                   ref={fileInputRef} 
                   className="hidden" 
                   accept="image/*" 
-                  onChange={handleFileChange}
+                  onChange={(e) => handleFileChange(e, 'avatar')}
                 />
               </div>
               
@@ -233,6 +237,46 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {userData?.role === 'owner' && (
+              <div className="mt-8 space-y-4 pt-8 border-t border-border">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Настройки организации</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <Card className="border-2 border-dashed border-muted bg-transparent rounded-2xl overflow-hidden group hover:border-primary/20 transition-colors">
+                    <CardContent className="p-6 flex flex-col items-center gap-4">
+                      <div className="relative w-16 h-16 bg-muted rounded-xl flex items-center justify-center">
+                        {logo ? (
+                          <Image src={logo} alt="Current Logo" fill className="object-contain p-2" />
+                        ) : (
+                          <Settings className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-black uppercase tracking-wider mb-1">Логотип Workspace</p>
+                        <p className="text-[8px] font-bold text-muted-foreground uppercase">Формат: PNG/JPG до 1MB</p>
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="h-9 w-full rounded-xl text-[9px] font-black uppercase tracking-widest"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isLogoUploading}
+                      >
+                        {isLogoUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+                        {logo ? "Загрузить новый логотип" : "Добавить логотип"}
+                      </Button>
+                      <input 
+                        type="file" 
+                        ref={logoInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => handleFileChange(e, 'logo')}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
             <div className="mt-10 flex flex-col gap-3">
               {userData?.role === 'owner' && (
                 <Button 
@@ -240,7 +284,7 @@ export default function ProfilePage() {
                   className="w-full h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 hover:bg-primary/5 text-primary"
                   onClick={() => router.push('/admin')}
                 >
-                  <ShieldCheck className="w-4 h-4 mr-2" /> Панель управления
+                  <ShieldCheck className="w-4 h-4 mr-2" /> Панель управления персоналом
                 </Button>
               )}
               <Button 

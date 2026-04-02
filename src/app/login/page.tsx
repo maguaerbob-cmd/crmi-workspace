@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,8 +22,7 @@ export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useFirebaseCore();
-
-  const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
+  const { logo } = useAppSettings();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +50,10 @@ export default function Login() {
             {logo && (
               <div className="relative w-24 h-24">
                 <Image 
-                  src={logo.imageUrl} 
+                  src={logo} 
                   alt="CRMI Logo" 
                   fill 
                   className="object-contain"
-                  data-ai-hint={logo.imageHint}
                 />
               </div>
             )}

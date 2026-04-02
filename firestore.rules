@@ -56,5 +56,10 @@ service cloud.firestore {
     match /departments/{deptId} {
       allow read: if isSignedIn();
     }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isSignedIn() && getUserData().role == 'owner';
+    }
   }
 }
