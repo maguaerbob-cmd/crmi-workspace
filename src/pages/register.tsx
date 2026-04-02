@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth as useFirebaseAuth } from '@/firebase';
+import { useAuth as useFirebaseCore, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import { DEPARTMENTS, Department } from '@/lib/constants';
+import { doc } from 'firebase/firestore';
+import { DEPARTMENTS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +20,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useFirebaseAuth();
-  const db = useFirestore();
+  const auth = useFirebaseCore();
+  const firestore = useFirestore();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,14 +34,16 @@ export default function Register() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      await setDoc(doc(db, 'userProfiles', user.uid), {
+      const profileData = {
         id: user.uid,
         name,
         email,
         departmentId,
-        role: 'reader', // Default role
+        role: 'reader',
         createdAt: new Date().toISOString()
-      });
+      };
+
+      setDocumentNonBlocking(doc(firestore, 'userProfiles', user.uid), profileData, { merge: true });
       
       router.push('/');
     } catch (error: any) {
@@ -106,12 +107,9 @@ export default function Register() {
                   <SelectValue placeholder="Выберите отдел" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="creative-youth-center">Центр по работе с креативной молодежью</SelectItem>
-                  <SelectItem value="youth-service-center">Центр Обслуживания Молодежи</SelectItem>
-                  <SelectItem value="volunteering-center">Центр волонтерства</SelectItem>
-                  <SelectItem value="analysis-monitoring-center">Центр анализа и мониторинга</SelectItem>
-                  <SelectItem value="media-center">Медиа-центр</SelectItem>
-                  <SelectItem value="technical-service-center">Центр технического обслуживания</SelectItem>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>{dept.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

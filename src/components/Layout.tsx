@@ -2,20 +2,24 @@ import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/lib/firebase';
+import { useAuth as useFirebaseCore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { LogOut, User, Plus, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { LogOut, LayoutDashboard, Plus, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DEPARTMENTS } from '@/lib/constants';
 
 const Layout: React.FC<{ children: React.ReactNode; title?: string }> = ({ children, title }) => {
   const { userData, loading } = useAuth();
   const router = useRouter();
+  const auth = useFirebaseCore();
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/login');
   };
+
+  const currentDepartment = DEPARTMENTS.find(d => d.id === userData?.departmentId);
 
   if (loading) return null;
 
@@ -52,7 +56,7 @@ const Layout: React.FC<{ children: React.ReactNode; title?: string }> = ({ child
           <div className="flex items-center space-x-4">
             <div className="flex flex-col items-end mr-2">
               <span className="text-sm font-semibold">{userData?.name}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{userData?.department}</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{currentDepartment?.label}</span>
             </div>
             <Avatar className="h-8 w-8 border border-primary/20">
               <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -70,8 +74,8 @@ const Layout: React.FC<{ children: React.ReactNode; title?: string }> = ({ child
         {title && (
           <div className="mb-8">
             <h1 className="text-3xl font-headline">{title}</h1>
-            {userData?.department && (
-              <p className="text-muted-foreground">{userData.department}</p>
+            {currentDepartment && (
+              <p className="text-muted-foreground">{currentDepartment.label}</p>
             )}
           </div>
         )}

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, DocumentReference } from 'firebase/firestore';
-import { Role, Department } from '@/lib/constants';
+import { Role } from '@/lib/constants';
 
 interface UserData {
   id: string;
@@ -22,12 +22,12 @@ const AuthContext = createContext<AuthContextType>({ user: null, userData: null,
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isUserLoading } = useUser();
-  const db = useFirestore();
+  const firestore = useFirestore();
 
-  const userDocRef = useMemo(() => {
-    if (!db || !user) return null;
-    return doc(db, 'userProfiles', user.uid);
-  }, [db, user]);
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'userProfiles', user.uid);
+  }, [firestore, user]);
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserData>(userDocRef as DocumentReference);
 

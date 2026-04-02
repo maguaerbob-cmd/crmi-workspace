@@ -1,13 +1,13 @@
 export const DEPARTMENTS = [
-  "Центр по работе с креативной молодежью",
-  "Центр Обслуживания Молодежи",
-  "Центр волонтерства",
-  "Центр анализа и мониторинга",
-  "Медиа-центр",
-  "Центр технического обслуживания"
+  { id: "creative-youth-center", label: "Центр по работе с креативной молодежью" },
+  { id: "youth-service-center", label: "Центр Обслуживания Молодежи" },
+  { id: "volunteering-center", label: "Центр волонтерства" },
+  { id: "analysis-monitoring-center", label: "Центр анализа и мониторинга" },
+  { id: "media-center", label: "Медиа-центр" },
+  { id: "technical-service-center", label: "Центр технического обслуживания" }
 ] as const;
 
-export type Department = typeof DEPARTMENTS[number];
+export type DepartmentId = typeof DEPARTMENTS[number]["id"];
 
 export const ROLES = ["owner", "head", "inspector", "reader"] as const;
 export type Role = typeof ROLES[number];
@@ -31,4 +31,4 @@ export const PRIORITY_COLORS: Record<Priority, string> = {
 export const STATUSES = ["запланировано", "в процессе", "завершено"] as const;
 export type TaskStatus = typeof STATUSES[number];
 
-export const ALL_ACCESS_DEPARTMENTS = ["Медиа-центр", "Центр технического обслуживания"];
+export const ALL_ACCESS_DEPARTMENTS = ["media-center", "technical-service-center"];
