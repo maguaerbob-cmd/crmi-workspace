@@ -1,19 +1,10 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * CRMI TaskFlow Security Rules
-     * 
-     * Core Philosophy: 
-     * This ruleset implements a Database-Backed Access Control (DBAC) model where authorization 
-     * is determined by the user's role and department, stored centrally in their UserProfile.
-     * 
-     * Data Structure:
-     * - /departments: Predefined organizational categories (Read-only for most).
-     * - /userProfiles: User metadata, roles, and department IDs (Ownership-based).
-     * - /tasks: Global task pool secured via departmental scoping and role-based access.
-     * - /settings: Global app configuration (e.g. logoURL).
      */
 
     // --- Helper Functions ---
@@ -26,10 +17,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Retrieves the current user's profile data.
-     * Used for fetching role and department context.
-     */
     function currentUserData() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
@@ -38,26 +25,22 @@ service cloud.firestore {
       return isSignedIn() && currentUserData().role == role;
     }
 
-    /**
-     * Checks if the user belongs to one of the global administrative/service roles.
-     */
     function isGlobalAdmin() {
-      return hasRole('owner') || hasRole('Technical Service Center') || hasRole('Media Center');
+      let data = currentUserData();
+      return hasRole('owner') || 
+             hasRole('director') || 
+             hasRole('deputy_director') ||
+             data.departmentId == 'technical-service-center' || 
+             data.departmentId == 'media-center';
     }
 
     // --- Collection Rules ---
 
-    /**
-     * @description Rules for organizational departments. Generally static and read-only.
-     */
     match /departments/{departmentId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isGlobalAdmin();
     }
 
-    /**
-     * @description Rules for user profiles, managing roles and departmental assignments.
-     */
     match /userProfiles/{userId} {
       allow get: if isSignedIn();
       allow list: if isGlobalAdmin();
@@ -66,12 +49,6 @@ service cloud.firestore {
       allow delete: if isGlobalAdmin() && resource != null;
     }
 
-    /**
-     * @description Rules for global application settings (e.g., branding).
-     * @path /settings/{settingId}
-     * @allow (get) Publicly accessible so that the logo can be shown on the login/register pages.
-     * @allow (update) Restricted to Global Admins (Owner).
-     */
     match /settings/{settingId} {
       allow get: if true;
       allow list: if isSignedIn();
@@ -79,19 +56,28 @@ service cloud.firestore {
       allow create, delete: if isGlobalAdmin();
     }
 
-    /**
-     * @description Rules for Tasks, the core operational entity.
-     */
     match /tasks/{taskId} {
+      // Пользователи видят задачи своего отдела или все, если они админы
       allow get, list: if isGlobalAdmin() || (isSignedIn() && currentUserData().departmentId == resource.data.departmentId);
-      allow create: if isSignedIn() && request.resource.data.creatorUserId == request.auth.uid;
+      
+      // Создавать может любой авторизованный, но данные должны быть корректны
+      allow create: if isSignedIn() && 
+                    request.resource.data.createdBy == request.auth.uid &&
+                    (isGlobalAdmin() || request.resource.data.departmentId == currentUserData().departmentId);
+      
+      // Редактирование: создатель, админ или начальник отдела
       allow update: if resource != null && (
         isGlobalAdmin() || 
-        (currentUserData().departmentId == resource.data.departmentId && request.resource.data.creatorUserId == resource.data.creatorUserId)
+        (currentUserData().departmentId == resource.data.departmentId && (
+          hasRole('head') || 
+          resource.data.createdBy == request.auth.uid || 
+          resource.data.responsibleUserId == request.auth.uid
+        ))
       );
+      
       allow delete: if resource != null && (
         isGlobalAdmin() || 
-        resource.data.creatorUserId == request.auth.uid
+        resource.data.createdBy == request.auth.uid
       );
     }
   }

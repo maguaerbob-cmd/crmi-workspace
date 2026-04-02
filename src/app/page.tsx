@@ -1,16 +1,17 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, FolderKanban, Filter, Building2, Clock } from 'lucide-react';
-import { DEPARTMENTS } from '@/lib/constants';
+import { DEPARTMENTS, ALL_ACCESS_DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
   const { userData } = useAuth();
@@ -18,25 +19,43 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
 
+  const isGlobalManager = useMemo(() => {
+    const role = userData?.role;
+    const deptId = userData?.departmentId;
+    return (
+      role === 'owner' || 
+      role === 'director' || 
+      role === 'deputy_director' || 
+      (deptId && ALL_ACCESS_DEPARTMENTS.includes(deptId as any))
+    );
+  }, [userData]);
+
   const tasksQuery = useMemoFirebase(() => {
     if (!db || !userData || !userData.isApproved) return null;
     const tasksRef = collection(db, 'tasks');
-    return query(tasksRef, orderBy('createdAt', 'desc'));
-  }, [db, userData]);
+    
+    // Если пользователь — глобальный менеджер, он может запрашивать все задачи
+    if (isGlobalManager) {
+      return query(tasksRef, orderBy('createdAt', 'desc'));
+    } else {
+      // Обычные пользователи должны фильтровать по своему отделу в самом запросе,
+      // чтобы пройти проверку правил безопасности Firestore
+      return query(
+        tasksRef, 
+        where('departmentId', '==', userData.departmentId),
+        orderBy('createdAt', 'desc')
+      );
+    }
+  }, [db, userData, isGlobalManager]);
 
   const { data: tasks, isLoading } = useCollection(tasksQuery);
-
-  const isGlobalManager = useMemo(() => {
-    const role = userData?.role;
-    return role === 'owner' || role === 'director' || role === 'deputy_director';
-  }, [userData]);
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     
     let result = tasks;
 
-    // Обычные пользователи видят только незавершенные задачи
+    // Обычные пользователи видят только незавершенные задачи (уже отфильтрованные по отделу в query)
     if (!isGlobalManager) {
       result = result.filter(task => task.status !== 'завершено');
     }
@@ -50,7 +69,8 @@ export default function Dashboard() {
       );
     }
 
-    if (selectedDept !== 'all') {
+    // Если глобальный менеджер выбрал конкретный отдел
+    if (isGlobalManager && selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
 
@@ -95,31 +115,33 @@ export default function Dashboard() {
             />
           </div>
           
-          <div className="w-full md:w-80">
-            <Select value={selectedDept} onValueChange={setSelectedDept}>
-              <SelectTrigger className="h-12 bg-card border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
-                  <SelectValue placeholder="ВСЕ ОТДЕЛЫ" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-none shadow-xl">
-                <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">ВСЕ ОТДЕЛЫ</SelectItem>
-                {DEPARTMENTS.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
-                    {dept.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {isGlobalManager && (
+            <div className="w-full md:w-80">
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="h-12 bg-card border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                    <SelectValue placeholder="ВСЕ ОТДЕЛЫ" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">ВСЕ ОТДЕЛЫ</SelectItem>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
+                      {dept.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between border-b border-border pb-2">
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-muted-foreground" />
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              {selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`}
+              {!isGlobalManager ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData?.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
             </h2>
           </div>
           <div className="text-[10px] font-black text-primary-foreground bg-foreground px-3 py-1 uppercase rounded-sm">
