@@ -4,7 +4,7 @@ service cloud.firestore {
 
     /**
      * FIRESTORE SECURITY RULES
-     * Enforces RBAC and DBAC for the CRMI platform.
+     * Оптимизировано для производительности и безопасности.
      */
 
     // --- HELPER FUNCTIONS ---
@@ -21,31 +21,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    function isGlobalAdmin() {
-      return isSignedIn() && getAuthData().role == 'owner';
-    }
-
-    function isSpecialDepartment() {
-      let authData = getAuthData();
-      return isSignedIn() && (authData.departmentId == 'technical-service-center' || authData.departmentId == 'media-center');
-    }
-
-    function isUserInDepartment(deptId) {
-      return isSignedIn() && getAuthData().departmentId == deptId;
-    }
-
-    function hasRole(role) {
-      return isSignedIn() && getAuthData().role == role;
+    // Проверка глобальных ролей и спец. отделов
+    function hasGlobalAccess(authData) {
+      return authData.role == 'owner' || 
+             authData.departmentId == 'technical-service-center' || 
+             authData.departmentId == 'media-center';
     }
 
     // --- COLLECTION RULES ---
 
     match /userProfiles/{userId} {
-      allow get: if isOwner(userId) || isGlobalAdmin();
-      allow list: if isOwner(userId) || isGlobalAdmin();
+      allow get: if isOwner(userId) || hasGlobalAccess(getAuthData());
+      allow list: if isOwner(userId) || hasGlobalAccess(getAuthData());
       allow create: if isOwner(userId);
-      allow update: if (resource != null && isOwner(userId)) || isGlobalAdmin() || (hasRole('head') && isUserInDepartment(resource.data.departmentId));
-      allow delete: if resource != null && isGlobalAdmin();
+      allow update: if isSignedIn() && (isOwner(userId) || hasGlobalAccess(getAuthData()) || (getAuthData().role == 'head' && getAuthData().departmentId == resource.data.departmentId));
+      allow delete: if isSignedIn() && hasGlobalAccess(getAuthData()) && getAuthData().role == 'owner';
     }
 
     match /departments/{departmentId} {
@@ -55,36 +45,29 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       
-      function canReadTask(data) {
-        let authData = getAuthData();
-        return authData.role == 'owner' || 
-               authData.departmentId == 'technical-service-center' || 
-               authData.departmentId == 'media-center' || 
-               (authData.departmentId == data.departmentId && data.status != 'завершено');
+      function canReadTask(authData, taskData) {
+        return hasGlobalAccess(authData) || authData.departmentId == taskData.departmentId;
       }
 
-      function canModifyTask(data) {
-        let authData = getAuthData();
-        return authData.role == 'owner' || (authData.role == 'head' && authData.departmentId == data.departmentId);
+      function canModifyTask(authData, taskData) {
+        return authData.role == 'owner' || (authData.role == 'head' && authData.departmentId == taskData.departmentId);
       }
 
-      function canCreateTask(data) {
-        let authData = getAuthData();
-        return authData.role == 'owner' || ((authData.role == 'head' || authData.role == 'inspector') && authData.departmentId == data.departmentId);
+      function canCreateTask(authData, taskData) {
+        return authData.role == 'owner' || ((authData.role == 'head' || authData.role == 'inspector') && authData.departmentId == taskData.departmentId);
       }
 
-      allow get: if canReadTask(resource.data);
+      // get и list используют одну логику доступа по отделу
+      allow get, list: if isSignedIn() && canReadTask(getAuthData(), resource.data);
       
-      // Исправлено: для корректной работы запросов list правила должны проверять данные документа (resource.data)
-      allow list: if isSignedIn() && (
-        isGlobalAdmin() || 
-        isSpecialDepartment() || 
-        (resource.data.departmentId == getAuthData().departmentId)
+      allow create: if isSignedIn() && canCreateTask(getAuthData(), request.resource.data);
+      
+      allow update: if isSignedIn() && (
+        canModifyTask(getAuthData(), resource.data) || 
+        (request.auth.uid == resource.data.responsibleUserId && resource.data.status != 'завершено')
       );
       
-      allow create: if canCreateTask(request.resource.data);
-      allow update: if resource != null && (canModifyTask(resource.data) || (isOwner(resource.data.responsibleUserId) && resource.data.status != 'завершено'));
-      allow delete: if resource != null && canModifyTask(resource.data);
+      allow delete: if isSignedIn() && canModifyTask(getAuthData(), resource.data);
     }
   }
 }

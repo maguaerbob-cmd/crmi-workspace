@@ -72,27 +72,27 @@ export default function NewTask() {
 
   return (
     <Layout title="Новая задача">
-      <div className="max-w-3xl mx-auto pb-10">
-        <Card className="border-none shadow-md overflow-hidden bg-white">
-          <CardContent className="p-6 md:p-10">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Название мероприятия</Label>
+      <div className="max-w-2xl mx-auto pb-10">
+        <Card className="border border-slate-200 shadow-sm overflow-hidden bg-white rounded-xl">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-1.5">
+                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Название</Label>
                 <Input 
                   id="title" 
                   required 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
                   placeholder="Введите название..." 
-                  className="h-12 text-lg font-bold border-none bg-slate-50 focus-visible:ring-primary/20 rounded-xl"
+                  className="h-10 text-base font-bold border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-lg"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <Label htmlFor="datetime" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Дата и время</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Дата</Label>
                   </div>
                   <Input 
                     id="datetime" 
@@ -100,32 +100,32 @@ export default function NewTask() {
                     required 
                     value={datetime} 
                     onChange={(e) => setDatetime(e.target.value)} 
-                    className="h-11 border-slate-100 bg-slate-50/50 rounded-xl"
+                    className="h-10 border-slate-200 bg-white rounded-lg"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <Label htmlFor="place" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Место проведения</Label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Место</Label>
                   </div>
                   <Input 
                     id="place" 
                     required 
                     value={place} 
                     onChange={(e) => setPlace(e.target.value)} 
-                    placeholder="Напр. Актовый зал" 
-                    className="h-11 border-slate-100 bg-slate-50/50 rounded-xl"
+                    placeholder="Локация..." 
+                    className="h-10 border-slate-200 bg-white rounded-lg"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Flag className="w-4 h-4 text-primary" />
-                    <Label htmlFor="priority" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Приоритет</Label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Flag className="w-3.5 h-3.5 text-slate-500" />
+                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Приоритет</Label>
                   </div>
                   <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                    <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl">
+                    <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -134,14 +134,14 @@ export default function NewTask() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <UserIcon className="w-4 h-4 text-primary" />
-                    <Label htmlFor="responsible" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Ответственный</Label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Ответственный</Label>
                   </div>
                   <Select value={responsibleUserId} onValueChange={setResponsibleUserId} required>
-                    <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 rounded-xl">
-                      <SelectValue placeholder="Выберите из списка" />
+                    <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
+                      <SelectValue placeholder="Выбрать" />
                     </SelectTrigger>
                     <SelectContent>
                       {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
@@ -149,57 +149,52 @@ export default function NewTask() {
                   </Select>
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Описание задачи</Label>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-wider text-slate-400">Описание</Label>
                   <Textarea 
                     id="description" 
                     required 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
-                    placeholder="Подробно опишите задачу..."
-                    className="min-h-[140px] border-slate-100 bg-slate-50/50 rounded-2xl p-4 text-sm leading-relaxed" 
+                    placeholder="Детали задачи..."
+                    className="min-h-[100px] border-slate-200 bg-white rounded-lg p-3 text-sm" 
                   />
                 </div>
 
-                <div className="space-y-4 md:col-span-2 pt-4">
-                  <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">План действий (чек-лист)</Label>
+                <div className="space-y-3 md:col-span-2 pt-2">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Чек-лист</Label>
                   
                   <div className="flex gap-2">
                     <Input 
-                      placeholder="Добавить новый пункт..." 
+                      placeholder="Добавить пункт..." 
                       value={newCheckItem} 
                       onChange={(e) => setNewCheckItem(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCheckItem())}
-                      className="h-11 border-slate-100 bg-white rounded-xl shadow-sm"
+                      className="h-10 border-slate-200 bg-white rounded-lg shadow-sm"
                     />
-                    <Button type="button" onClick={handleAddCheckItem} variant="secondary" className="h-11 rounded-xl px-6">
+                    <Button type="button" onClick={handleAddCheckItem} variant="secondary" className="h-10 rounded-lg px-4 bg-slate-900 text-white hover:bg-slate-800">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-1.5">
                     {checklist.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl group transition-all hover:bg-slate-100">
-                        <span className="text-sm font-semibold text-slate-700">{item.text}</span>
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleRemoveCheckItem(index)}>
+                      <div key={index} className="flex items-center justify-between bg-slate-50 border border-slate-100 px-3 py-2 rounded-lg group">
+                        <span className="text-xs font-semibold text-slate-700">{item.text}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleRemoveCheckItem(index)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
-                    {checklist.length === 0 && (
-                      <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-2xl">
-                        <p className="text-xs text-slate-400">Список пуст. Добавьте задачи для отслеживания прогресса.</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-8 flex flex-col sm:flex-row gap-3">
-                <Button type="submit" className="flex-1 h-12 rounded-xl text-sm font-bold uppercase tracking-wider shadow-lg shadow-primary/20">
-                  Создать мероприятие
+              <div className="pt-4 flex flex-col sm:flex-row gap-2">
+                <Button type="submit" className="flex-1 h-11 rounded-lg text-xs font-bold uppercase tracking-widest bg-slate-900 text-white shadow-md">
+                  Создать
                 </Button>
-                <Button type="button" variant="outline" className="h-12 px-10 rounded-xl text-sm font-bold uppercase tracking-wider text-slate-500" onClick={() => router.back()}>
+                <Button type="button" variant="outline" className="h-11 px-8 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-500" onClick={() => router.back()}>
                   Отмена
                 </Button>
               </div>
