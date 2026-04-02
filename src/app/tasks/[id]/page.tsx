@@ -49,6 +49,22 @@ export default function TaskDetails() {
     }
   }, [task]);
 
+  const isReader = userData?.role === 'reader';
+  const isGlobalManager = userData?.role === 'owner' || userData?.role === 'director' || userData?.role === 'deputy_director';
+  
+  const canEdit = !isReader && (
+                  isGlobalManager || 
+                  (userData?.role === 'head' && userData?.departmentId === task?.departmentId) ||
+                  userData?.id === task?.responsibleUserId ||
+                  userData?.id === task?.createdBy
+                );
+
+  const isCreator = userData?.id === task?.createdBy;
+  const isHeadOfDept = userData?.role === 'head' && userData?.departmentId === task?.departmentId;
+  const isCompleted = task?.status === 'завершено';
+
+  const canDelete = !isReader && (isGlobalManager || ((isCreator || isHeadOfDept) && !isCompleted));
+
   const handleToggleCheck = (index: number) => {
     if (!taskRef || !canEdit) return;
     const newList = [...checklist];
@@ -69,21 +85,6 @@ export default function TaskDetails() {
     toast({ title: "ЗАДАЧА УДАЛЕНА", description: "ЗАПИСЬ ИСКЛЮЧЕНА ИЗ БАЗЫ ДАННЫХ" });
     router.push('/');
   };
-
-  const isReader = userData?.role === 'reader';
-  const canEdit = !isReader && (
-                  userData?.role === 'owner' || 
-                  (userData?.role === 'head' && userData?.departmentId === task?.departmentId) ||
-                  userData?.id === task?.responsibleUserId ||
-                  userData?.id === task?.createdBy
-                );
-
-  const isCreator = userData?.id === task?.createdBy;
-  const isHeadOfDept = userData?.role === 'head' && userData?.departmentId === task?.departmentId;
-  const isOwner = userData?.role === 'owner';
-  const isCompleted = task?.status === 'завершено';
-
-  const canDelete = !isReader && (isOwner || ((isCreator || isHeadOfDept) && !isCompleted));
 
   if (isLoading) return (
     <Layout title="Загрузка...">

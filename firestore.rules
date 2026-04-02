@@ -15,6 +15,11 @@ service cloud.firestore {
       return getUserData().role != 'reader';
     }
 
+    function isGlobalManager() {
+      let role = getUserData().role;
+      return role == 'owner' || role == 'director' || role == 'deputy_director';
+    }
+
     // Профили пользователей
     match /userProfiles/{userId} {
       allow read, list: if isSignedIn();
@@ -30,32 +35,27 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read, list: if isSignedIn();
       
-      // Читатель не может создавать или изменять задачи
+      // Читатель не может создавать задачи
       allow create: if isSignedIn() && isNotReader();
       
       allow update: if isSignedIn() && isNotReader() && (
-        getUserData().role == 'owner' || 
+        isGlobalManager() || 
         request.auth.uid == resource.data.createdBy || 
         request.auth.uid == resource.data.responsibleUserId ||
         (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)
       );
       
       // Логика удаления:
-      // 1. Владелец может все
-      // 2. Создатель или Руководитель отдела (не читатели) могут удалять только НЕ завершенные задачи
+      // 1. Глобальные менеджеры могут всё
+      // 2. Создатель или Руководитель отдела могут удалять только НЕ завершенные задачи
       allow delete: if isSignedIn() && isNotReader() && (
-        getUserData().role == 'owner' || 
+        isGlobalManager() || 
         (
           (request.auth.uid == resource.data.createdBy || 
            (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)) &&
           resource.data.status != 'завершено'
         )
       );
-    }
-
-    match /databases/{database}/documents/userProfiles/{uid} {
-      // Это правило дублирует основное, но помогает при сложных запросах
-      allow read: if isSignedIn();
     }
 
     match /departments/{deptId} {

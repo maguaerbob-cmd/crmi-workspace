@@ -41,7 +41,11 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
-  const canCreate = userData?.role === 'owner' || userData?.role === 'head' || userData?.role === 'inspector';
+  const canCreate = userData?.role === 'owner' || 
+                    userData?.role === 'director' || 
+                    userData?.role === 'deputy_director' || 
+                    userData?.role === 'head' || 
+                    userData?.role === 'inspector';
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">

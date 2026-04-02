@@ -26,12 +26,18 @@ export default function Dashboard() {
 
   const { data: tasks, isLoading } = useCollection(tasksQuery);
 
+  const isGlobalManager = useMemo(() => {
+    const role = userData?.role;
+    return role === 'owner' || role === 'director' || role === 'deputy_director';
+  }, [userData]);
+
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     
     let result = tasks;
 
-    if (userData?.role !== 'owner') {
+    // Обычные пользователи видят только незавершенные задачи
+    if (!isGlobalManager) {
       result = result.filter(task => task.status !== 'завершено');
     }
 
@@ -49,7 +55,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [tasks, search, selectedDept, userData]);
+  }, [tasks, search, selectedDept, isGlobalManager]);
 
   return (
     <Layout title="Задачи">
@@ -108,9 +114,10 @@ export default function Dashboard() {
             {filteredTasks.map(task => {
               const isReader = userData?.role === 'reader';
               const canEdit = !isReader && (
-                userData?.role === 'owner' || 
+                isGlobalManager || 
                 userData?.id === task.responsibleUserId || 
-                userData?.id === task.createdBy
+                userData?.id === task.createdBy ||
+                (userData?.role === 'head' && userData?.departmentId === task.departmentId)
               );
 
               return (

@@ -9,11 +9,13 @@ export const DEPARTMENTS = [
 
 export type DepartmentId = typeof DEPARTMENTS[number]["id"];
 
-export const ROLES = ["owner", "head", "inspector", "reader"] as const;
+export const ROLES = ["owner", "director", "deputy_director", "head", "inspector", "reader"] as const;
 export type Role = typeof ROLES[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   owner: "Владелец",
+  director: "Директор",
+  deputy_director: "Зам. директора",
   head: "Руководитель",
   inspector: "Инспектор",
   reader: "Читатель"
