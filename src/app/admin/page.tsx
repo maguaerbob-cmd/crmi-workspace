@@ -108,20 +108,20 @@ export default function AdminPage() {
                   </div>
 
                   {/* Контейнер с селекторами в один ряд */}
-                  <div className="flex flex-wrap items-end gap-3 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
+                  <div className="flex flex-wrap items-end gap-2 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
                     {userData?.role === 'owner' && (
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Отдел</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Отдел</span>
                         <Select 
                           value={user.departmentId} 
                           onValueChange={(v) => handleDepartmentChange(user.id, v)}
                         >
-                          <SelectTrigger className="h-10 w-[180px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                          <SelectTrigger className="h-8 w-[140px] text-[9px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-lg">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
                             {DEPARTMENTS.map(dept => (
-                              <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
+                              <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-widest">
                                 {dept.label}
                               </SelectItem>
                             ))}
@@ -130,11 +130,11 @@ export default function AdminPage() {
                       </div>
                     )}
 
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Роль</span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Роль</span>
                       {user.role === 'owner' ? (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-white px-4 py-2.5 bg-slate-900 rounded-xl shadow-sm uppercase tracking-widest h-10">
-                          <Shield className="w-3 h-3" />
+                        <div className="flex items-center gap-2 text-[9px] font-black text-white px-3 bg-slate-900 rounded-lg shadow-sm uppercase tracking-widest h-8">
+                          <Shield className="w-2.5 h-2.5" />
                           OWNER
                         </div>
                       ) : (
@@ -143,12 +143,12 @@ export default function AdminPage() {
                           onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
-                          <SelectTrigger className="h-10 w-[130px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                          <SelectTrigger className="h-8 w-[100px] text-[9px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-lg">
                             <SelectValue placeholder="Роль" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
                             {getAvailableRoles(userData?.role || '').map(role => (
-                              <SelectItem key={role} value={role} className="text-[10px] font-black uppercase tracking-widest">
+                              <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-widest">
                                 {ROLE_LABELS[role as Role]}
                               </SelectItem>
                             ))}
