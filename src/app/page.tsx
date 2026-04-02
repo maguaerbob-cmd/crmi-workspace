@@ -19,12 +19,12 @@ export default function Dashboard() {
   const [selectedDept, setSelectedDept] = useState<string>('all');
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!db || !userData) return null;
+    if (!db) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Все видят все задачи, отсортированные по дате создания
+    // Все авторизованные пользователи видят все задачи, отсортированные по дате создания
     return query(tasksRef, orderBy('createdAt', 'desc'));
-  }, [db, userData]);
+  }, [db]);
 
   const { data: tasks, isLoading } = useCollection(tasksQuery);
 
@@ -54,6 +54,7 @@ export default function Dashboard() {
   return (
     <Layout title="Задачи">
       <div className="space-y-4 max-w-5xl mx-auto">
+        {/* Панель фильтров */}
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative group flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />

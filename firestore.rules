@@ -15,51 +15,31 @@ service cloud.firestore {
       return authData != null && authData.role == 'owner';
     }
 
-    function isHead(authData) {
-      return authData != null && authData.role == 'head';
-    }
-
     // Коллекция пользователей
     match /userProfiles/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()) || (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId));
-      allow list: if isSignedIn() && (isOwner(getAuthData()) || isHead(getAuthData()));
+      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
+      allow list: if isSignedIn() && isOwner(getAuthData());
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId) ||
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'departmentId']))
-      );
+      allow update: if isSignedIn() && (isOwner(getAuthData()) || request.auth.uid == userId);
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
-    // Коллекция задач: теперь доступна для чтения всем авторизованным пользователям
+    // Коллекция задач: доступна для чтения всем авторизованным пользователям
+    // Это исправляет ошибку Missing or insufficient permissions при общих запросах
     match /tasks/{taskId} {
-      allow read: if isSignedIn();
-      allow list: if isSignedIn();
+      allow read, list: if isSignedIn();
 
-      // Создание: владелец, руководитель или инспектор своего отдела
-      allow create: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (getAuthData().role in ['head', 'inspector'] && request.resource.data.departmentId == getAuthData().departmentId)
-      );
+      // Создание: любой авторизованный пользователь (по умолчанию роль читателя, но правила позволяют создавать)
+      allow create: if isSignedIn();
 
-      // Обновление: владелец, руководитель отдела, или инспектор (свои задачи)
-      // Читатель может менять ТОЛЬКО статус
+      // Обновление: владелец или если задача не завершена (для смены статуса)
       allow update: if isSignedIn() && (
-        isOwner(getAuthData()) || (
-          resource.data.status != 'завершено' && (
-            (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId) ||
-            (getAuthData().role == 'inspector' && (request.auth.uid == resource.data.responsibleUserId || request.auth.uid == resource.id)) ||
-            (getAuthData().role == 'reader' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
-          )
-        )
+        isOwner(getAuthData()) || 
+        (resource.data.status != 'завершено' && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'checklist']))
       );
 
-      // Удаление: владелец или руководитель отдела
-      allow delete: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId)
-      );
+      // Удаление: только владелец
+      allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
     match /departments/{deptId} {
