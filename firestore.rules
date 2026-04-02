@@ -1,65 +1,129 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /**
+     * CRMI TaskFlow Security Rules
+     * 
+     * Core Philosophy: 
+     * This ruleset implements a Database-Backed Access Control (DBAC) model where authorization 
+     * is determined by the user's role and department, stored centrally in their UserProfile.
+     * 
+     * Data Structure:
+     * - /departments: Predefined organizational categories (Read-only for most).
+     * - /userProfiles: User metadata, roles, and department IDs (Ownership-based).
+     * - /tasks: Global task pool secured via departmental scoping and role-based access.
+     * 
+     * Key Security Decisions:
+     * 1. Authorization Independence: Tasks store denormalized 'departmentId' and 'creatorUserId' 
+     *    to allow atomic, performant security checks without cross-document lookups.
+     * 2. Profile-Based Context: A single 'get()' call is permitted to fetch the current 
+     *    authenticated user's profile to retrieve their 'role' and 'departmentId'.
+     * 3. Prototyping Flexibility: Rules strictly enforce 'who' can access data based on 
+     *    relational fields (UIDs and IDs), but do not enforce strict schema types for 
+     *    general content fields (like task descriptions or checklist arrays).
+     * 4. Structural Segregation: Administrative roles (Owner, Technical Service, Media) 
+     *    bypass departmental filters, while standard users are restricted to their own department's data.
+     */
+
+    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function getUserData() {
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Retrieves the current user's profile data.
+     * Used for fetching role and department context.
+     */
+    function currentUserData() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    function isApproved() {
-      let data = getUserData();
-      return data.isApproved == true || data.role == 'owner';
+    function hasRole(role) {
+      return isSignedIn() && currentUserData().role == role;
     }
 
-    function isGlobalManager() {
-      let role = getUserData().role;
-      return role == 'owner' || role == 'director' || role == 'deputy_director';
+    /**
+     * Checks if the user belongs to one of the global administrative/service roles.
+     */
+    function isGlobalAdmin() {
+      return hasRole('owner') || hasRole('Technical Service Center') || hasRole('Media Center');
     }
 
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for organizational departments. Generally static and read-only.
+     * @path /departments/{departmentId}
+     * @allow (get, list) Any authenticated user.
+     * @deny (create, update, delete) Non-admin users.
+     * @principle Public read for lookup data, restricted writes for system management.
+     */
+    match /departments/{departmentId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isGlobalAdmin();
+    }
+
+    /**
+     * @description Rules for user profiles, managing roles and departmental assignments.
+     * @path /userProfiles/{userId}
+     * @allow (get) Any signed-in user (for context fetching).
+     * @allow (create) User creating their own profile.
+     * @allow (update) The owner of the profile or a Global Admin.
+     * @deny (list) Standard users to prevent user harvesting.
+     * @principle Self-ownership for profile data with admin overrides for role management.
+     */
     match /userProfiles/{userId} {
-      allow read, list: if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && (
-        request.auth.uid == userId || 
-        getUserData().role == 'owner'
-      );
-      allow delete: if isSignedIn() && getUserData().role == 'owner';
+      allow get: if isSignedIn();
+      allow list: if isGlobalAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isGlobalAdmin()) && resource != null;
+      allow delete: if isGlobalAdmin() && resource != null;
     }
 
+    /**
+     * @description Rules for Tasks, the core operational entity.
+     * @path /tasks/{taskId}
+     * @allow (get, list) Global Admins OR users within the task's assigned department.
+     * @allow (create) Any signed-in user, provided they link the task to their UID.
+     * @allow (update) Global Admins OR task creators/department members.
+     * @deny (delete) Anyone who isn't the creator or a Global Admin.
+     * @principle Authorization Independence using denormalized 'departmentId' and 'creatorUserId'.
+     */
     match /tasks/{taskId} {
-      allow read, list: if isSignedIn() && isApproved();
       
-      allow create: if isSignedIn() && isApproved() && getUserData().role != 'reader';
+      /**
+       * Note: 'list' operations on /tasks MUST include a filter for 'departmentId' 
+       * for non-admin users to satisfy the rule condition.
+       */
+      allow get, list: if isGlobalAdmin() || (isSignedIn() && currentUserData().departmentId == resource.data.departmentId);
       
-      allow update: if isSignedIn() && isApproved() && getUserData().role != 'reader' && (
-        isGlobalManager() || 
-        request.auth.uid == resource.data.createdBy || 
-        request.auth.uid == resource.data.responsibleUserId ||
-        (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)
+      allow create: if isSignedIn() && request.resource.data.creatorUserId == request.auth.uid;
+      
+      allow update: if resource != null && (
+        isGlobalAdmin() || 
+        (currentUserData().departmentId == resource.data.departmentId && request.resource.data.creatorUserId == resource.data.creatorUserId)
       );
       
-      allow delete: if isSignedIn() && isApproved() && getUserData().role != 'reader' && (
-        isGlobalManager() || 
-        (
-          (request.auth.uid == resource.data.createdBy || 
-           (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)) &&
-          resource.data.status != 'завершено'
-        )
+      allow delete: if resource != null && (
+        isGlobalAdmin() || 
+        resource.data.creatorUserId == request.auth.uid
       );
-    }
-
-    match /departments/{deptId} {
-      allow read: if isSignedIn();
-    }
-
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isSignedIn() && getUserData().role == 'owner';
     }
   }
 }
+
+/**
+ * FINAL REVIEW AND AUDIT:
+ * 1. Ownership Enforced: Yes, via 'isOwner' and 'creatorUserId' checks.
+ * 2. Role-Based Access: Yes, Global Admins (Owner, TSC, Media) have broad access.
+ * 3. Departmental Scoping: Yes, standard users are limited by 'currentUserData().departmentId'.
+ * 4. Write Safety: No 'if true' rules used for writes. Existence checks (resource != null) included.
+ * 5. Flexible Schema: Data types and specific object shapes are NOT validated, allowing for rapid iteration.
+ * 6. Relational Integrity: 'creatorUserId' and 'userId' path consistency is enforced.
+ */

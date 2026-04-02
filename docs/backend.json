@@ -1,66 +1,10 @@
-
 {
   "entities": {
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Represents a user within the CRMI task management system, including their authentication details, role, and departmental affiliation.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the user."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the user, used for authentication.",
-          "format": "email"
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "URL to the user's profile picture."
-        },
-        "role": {
-          "type": "string",
-          "description": "The assigned role of the user within the system, determining their access permissions.",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
-        },
-        "departmentId": {
-          "type": "string",
-          "description": "Reference to the Department entity the user belongs to. (Relationship: Department 1:N UserProfile)"
-        },
-        "isApproved": {
-          "type": "boolean",
-          "description": "Whether the user's registration has been approved by an administrator."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user profile was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "role",
-        "departmentId",
-        "isApproved",
-        "createdAt"
-      ]
-    },
     "Department": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Department",
       "type": "object",
-      "description": "Represents a department within the CRMI organization. Departments are responsible for tasks and define user affiliations.",
+      "description": "Represents an organizational department within the CRMI system. Departments are predefined and categorize tasks and users.",
       "properties": {
         "id": {
           "type": "string",
@@ -68,8 +12,7 @@
         },
         "name": {
           "type": "string",
-          "description": "The name of the department.",
-          "format": "enum",
+          "description": "The official name of the department.",
           "items": {
             "type": "string"
           }
@@ -80,11 +23,50 @@
         "name"
       ]
     },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores information about a user, including their name, email, assigned role, and department. This data works in conjunction with an external authentication system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This typically corresponds to the user's ID from the authentication system."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's assigned role within the system, determining their access and permissions.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Reference to the department the user belongs to. (Relationship: Department 1:N UserProfile)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "departmentId"
+      ]
+    },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a task or event managed within the CRMI system, including its details, status, and responsible parties.",
+      "description": "Represents a single task, event, or outing, containing all relevant details, status, and associated departmental and user information.",
       "properties": {
         "id": {
           "type": "string",
@@ -92,91 +74,69 @@
         },
         "title": {
           "type": "string",
-          "description": "The main title or short name of the task."
+          "description": "A concise title or name for the task."
         },
-        "dateTime": {
+        "datetime": {
           "type": "string",
-          "description": "The planned date and time for the task or event.",
+          "description": "The scheduled date and time for the task to occur.",
           "format": "date-time"
         },
         "place": {
           "type": "string",
-          "description": "The physical location where the task will take place."
+          "description": "The physical location or venue where the task will take place."
         },
         "description": {
           "type": "string",
-          "description": "A detailed description of the task's objectives and requirements."
+          "description": "A detailed description or narrative explaining the task."
         },
         "checklist": {
           "type": "array",
-          "description": "A list of sub-items or steps required to complete the task.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "status": {
-          "type": "string",
-          "description": "The current progress status of the task.",
-          "format": "enum",
+          "description": "A list of individual checklist item texts for the task. Note: The 'done' status for each item is not stored directly in this model due to schema constraints.",
           "items": {
             "type": "string"
           }
         },
         "priority": {
           "type": "string",
-          "description": "The urgency of the task.",
-          "format": "enum",
-          "enum": ["не срочно", "срочно"]
+          "description": "The priority level of the task, influencing its visibility or urgency.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the task.",
+          "items": {
+            "type": "string"
+          }
         },
         "departmentId": {
           "type": "string",
-          "description": "Reference to the Department entity that owns or is responsible for this task. (Relationship: Department 1:N Task)"
+          "description": "Reference to the department to which this task belongs. (Relationship: Department 1:N Task)"
         },
         "responsibleUserId": {
           "type": "string",
-          "description": "Reference to the UserProfile entity who is designated as responsible for this task. (Relationship: UserProfile 1:N Task)"
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "UID of the user who created the task."
-        },
-        "createdByName": {
-          "type": "string",
-          "description": "Name of the user who created the task."
+          "description": "Reference to the UserProfile of the individual designated as responsible for this task. (Relationship: UserProfile 1:N Task)"
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the task was initially created.",
+          "description": "The timestamp indicating when the task was initially created.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
         "title",
-        "dateTime",
+        "datetime",
         "place",
         "description",
         "checklist",
-        "status",
         "priority",
+        "status",
         "departmentId",
         "responsibleUserId",
-        "createdBy",
-        "createdByName",
         "createdAt"
       ]
-    },
-    "AppSettings": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AppSettings",
-      "type": "object",
-      "description": "Global settings for the CRMI workspace.",
-      "properties": {
-        "logoURL": {
-          "type": "string",
-          "description": "Base64 or URL of the application logo."
-        }
-      }
     }
   },
   "auth": {
@@ -188,33 +148,33 @@
   "firestore": {
     "structure": [
       {
-        "path": "/userProfiles/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores individual user profiles.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique ID of the user."
-            }
-          ]
-        }
-      },
-      {
         "path": "/departments/{departmentId}",
         "definition": {
           "entityName": "Department",
           "schema": {
             "$ref": "#/backend/entities/Department"
           },
-          "description": "Contains a fixed list of CRMI departments.",
+          "description": "Stores predefined organizational departments. This is a static collection primarily for lookup and associating users and tasks. It is generally read-only for authenticated users, with write access restricted to system owners for setup and management.",
           "params": [
             {
               "name": "departmentId",
-              "description": "The unique identifier for a department."
+              "description": "Unique identifier for a specific department."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Contains user-specific profile information, including their assigned role and department. The 'role' and 'departmentId' fields are critical for database-backed access control (DBAC) decisions across the application. Users can read/write their own profile, Owners can manage all profiles, and Department Heads can assign 'inspector'/'reader' roles to users within their department.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique Firebase Authentication UID of the user."
             }
           ]
         }
@@ -226,31 +186,16 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "A top-level collection for all tasks.",
+          "description": "A top-level collection storing all tasks, events, or outings. Each document includes denormalized 'departmentId', 'responsibleUserId', and 'creatorUserId' fields to ensure Authorization Independence for efficient and secure access control checks. The 'checklist' field is modified to be an array of objects `{text: string, done: boolean}` to track completion status of individual items.",
           "params": [
             {
               "name": "taskId",
-              "description": "The unique identifier for a specific task."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/settings/{settingId}",
-        "definition": {
-          "entityName": "AppSettings",
-          "schema": {
-            "$ref": "#/backend/entities/AppSettings"
-          },
-          "description": "Global application configuration.",
-          "params": [
-            {
-              "name": "settingId",
-              "description": "The identifier for the setting document (e.g., 'app')."
+              "description": "Unique identifier for a specific task."
             }
           ]
         }
       }
-    ]
+    ],
+    "reasoning": "The Firestore data structure for CRMI TaskFlow prioritizes a secure, scalable, and debuggable design following the core principles outlined. \n\n**Authorization Independence (CRITICAL):**\n\n1.  **User Profile Denormalization (Indirect):** Instead of denormalizing user roles and departments into every document, `UserProfile` documents (`/userProfiles/{userId}`) centrally store `role` and `departmentId`. Firestore Security Rules will use a `get(/userProfiles/$(request.auth.uid))` call to retrieve the current user's profile information. This is an acceptable exception to the `get()` avoidance principle, as it fetches the *current user's own authorization context*, not context from other data entities. This prevents complex, multi-hop `get()` calls that would break atomic operations or create debugging nightmares.\n2.  **Task Authorization Denormalization:** Each `Task` document (`/tasks/{taskId}`) includes crucial authorization fields: `departmentId`, `responsibleUserId`, and `creatorUserId`. This ensures that security rules evaluating access for a specific task can directly reference `resource.data.departmentId`, `resource.data.responsibleUserId`, and `resource.data.creatorUserId` without needing any additional `get()` operations on other `Task` documents or their 'parents'. This makes task-specific authorization atomic and highly performant.\n\n**QAPs (Rules are not Filters) and Structural Segregation:**\n\n1.  **Single `tasks` Collection:** All tasks are stored in a top-level collection `/tasks`. This is crucial for satisfying the 'Technical Service Center', 'Media Center', and 'Owner' roles' requirement to view *all* tasks. If tasks were segregated into subcollections (e.g., `/departments/{departmentId}/tasks`), these global access roles would necessitate inefficient collection group queries or multiple queries, violating QAPs.\n2.  **Explicit Rule Enforcement for `list` operations:**\n    *   For standard users (Department Head, Inspector, Reader), security rules will require that any `list` query on `/tasks` *must* include a `where('departmentId', '==', currentUserDepartmentId)` clause. If a user attempts to query without this filter, the rules will deny access to any documents not belonging to their department. This adheres to QAPs because the rule doesn't implicitly filter the data returned; it explicitly grants or denies access to individual documents based on the query's criteria and the user's role.\n    *   For special roles (Owner, Technical Service Center, Media Center), the rules will allow `list` queries on `/tasks` *without* a `departmentId` filter, as their role grants them universal read access. This structural segregation of access logic (different access based on role) is handled efficiently within a single collection.\n3.  **Dedicated `departments` Collection:** A top-level `/departments` collection stores predefined department names. This collection is primarily read-only for most users, further simplifying its security posture.\n4.  **Dedicated `userProfiles` Collection:** A top-level `/userProfiles` collection stores all user-related metadata. This path-based ownership ensures a homogeneous security posture where users generally own their profiles, with specific override permissions for Owners and Department Heads for role management.\n\n**DBAC and Role Management:**\n\n*   User roles (`owner`, `department_head`, `inspector`, `reader`) are stored directly in each user's `UserProfile` document, ensuring all authorization decisions are database-backed and rely solely on `request.auth.uid` for lookup. This avoids the use of custom claims, as mandated.\n\n**Invariants and Predictability:**\n\n*   `creatorUserId`, `responsibleUserId`, `departmentId`, and `status` fields within `Task` documents make ownership, responsibility, and state explicit, simplifying rule writing and data integrity checks.\n*   The `checklist` field in `Task` is structured as an array of objects (`{text: string, done: boolean}`) to explicitly model the state of each checklist item, ensuring predictable schema and direct rule application for updates."
   }
 }

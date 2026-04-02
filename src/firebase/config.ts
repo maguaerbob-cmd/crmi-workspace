@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "studio-5273470248-b0cf3",
-  "appId": "1:436781181001:web:19d2be4dbc4a0ef9747798",
-  "apiKey": "AIzaSyA0dldL64qbHkgREXuL3JjqHtjkdTiz5ZE",
-  "authDomain": "studio-5273470248-b0cf3.firebaseapp.com",
+  "projectId": "crmi-workspace",
+  "appId": "1:56028187243:web:6ac63e2d8298c6c6b8ff2e",
+  "apiKey": "AIzaSyBtWMF-TXgfyUKNFb1CBi0xa3WFAbtoObw",
+  "authDomain": "crmi-workspace.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "436781181001"
+  "messagingSenderId": "56028187243"
 };
