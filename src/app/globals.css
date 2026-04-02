@@ -1,28 +1,29 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 350 25% 96%; /* Very light blush (#F7EFF0) */
+    --foreground: 351 82% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 351 82% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%; /* Slate 900 - Строгий графитовый */
+    --popover-foreground: 351 82% 10%;
+    --primary: 351 82% 40%; /* Deep crimson (#BC122B) */
     --primary-foreground: 210 40% 98%;
-    --secondary: 215 25% 27%; /* Slate 700 */
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 215 25% 27%; /* Slate 700 для акцентов */
+    --secondary: 351 20% 90%;
+    --secondary-foreground: 351 82% 20%;
+    --muted: 350 25% 94%;
+    --muted-foreground: 351 20% 40%;
+    --accent: 314 72% 57%; /* Vibrant magenta (#E045BD) */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 0% 0%; /* Черный для деструктивных действий */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 11%;
+    --border: 351 20% 85%;
+    --input: 351 20% 85%;
+    --ring: 351 82% 40%;
     --radius: 0.75rem;
   }
 }
@@ -32,7 +33,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#f8fafc] text-slate-950 font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }
 
@@ -47,16 +48,14 @@
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-slate-900 transition-colors;
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
 
-/* Строгие профессиональные инпуты без тяжелых обводок */
 input, textarea, select {
-  @apply focus:ring-slate-950/10 !important;
+  @apply focus:ring-primary/10 !important;
   @apply border border-slate-200 !important;
 }
 
-/* Карточки без обводки, с мягкой тенью */
 .card-industrial {
   @apply border-none bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5;
 }

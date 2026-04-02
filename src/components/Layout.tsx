@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -9,6 +10,8 @@ import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2 } from 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +24,8 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   const router = useRouter();
   const pathname = usePathname();
   const auth = useFirebaseCore();
+
+  const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
 
   useEffect(() => {
     if (!loading && !user && !['/login', '/register'].includes(pathname)) {
@@ -35,11 +40,10 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
-  // Теперь и руководитель (head), и инспектор (inspector) видят кнопку создания
   const canCreate = userData?.role === 'owner' || userData?.role === 'head' || userData?.role === 'inspector';
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8] gap-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
       <div className="relative">
         <div className="w-16 h-16 bg-primary/10 rounded-2xl animate-pulse" />
         <Loader2 className="w-8 h-8 text-primary animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -53,33 +57,43 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f0f4f8] pb-24 md:pb-0">
+    <div className="min-h-screen flex flex-col bg-background pb-24 md:pb-0">
       <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md hidden md:block">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-5xl">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold shadow-sm">C</div>
-            <span className="text-lg font-bold tracking-tight text-primary">CRMI WORKSPACE</span>
+          <Link href="/" className="flex items-center space-x-3">
+            {logo && (
+              <div className="relative w-10 h-10">
+                <Image 
+                  src={logo.imageUrl} 
+                  alt="CRMI Logo" 
+                  fill 
+                  className="object-contain"
+                  data-ai-hint={logo.imageHint}
+                />
+              </div>
+            )}
+            <span className="text-lg font-black tracking-tighter text-primary uppercase">CRMI WORKSPACE</span>
           </Link>
           
           <nav className="flex items-center space-x-1">
             <Link href="/">
-              <Button variant={isActive('/') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9">
+              <Button variant={isActive('/') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
                 <LayoutDashboard className="w-4 h-4" /> Список
               </Button>
             </Link>
             {canCreate && (
               <Link href="/tasks/new">
-                <Button variant={isActive('/tasks/new') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9">
+                <Button variant={isActive('/tasks/new') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
                   <PlusCircle className="w-4 h-4" /> Создать
                 </Button>
               </Link>
             )}
             <Link href="/profile">
-              <Button variant={isActive('/profile') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9">
+              <Button variant={isActive('/profile') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
                 <User className="w-4 h-4" /> Профиль
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive ml-2">
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-primary ml-2">
               <LogOut className="w-5 h-5" />
             </Button>
           </nav>
@@ -93,14 +107,24 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
               <ChevronLeft className="w-6 h-6" />
             </Button>
           ) : (
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm">C</div>
+            logo && (
+              <div className="relative w-8 h-8">
+                <Image 
+                  src={logo.imageUrl} 
+                  alt="CRMI Logo" 
+                  fill 
+                  className="object-contain"
+                  data-ai-hint={logo.imageHint}
+                />
+              </div>
+            )
           )}
-          <span className="font-bold text-primary tracking-tight text-base">
+          <span className="font-black text-primary tracking-tighter text-sm uppercase">
             {title || 'CRMI WORKSPACE'}
           </span>
         </div>
         <Link href="/profile">
-          <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-[11px] font-bold text-primary uppercase border border-primary/20">
+          <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-[11px] font-black text-primary uppercase border border-primary/20">
             {userData?.name?.substring(0, 2)}
           </div>
         </Link>
@@ -108,8 +132,8 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
       <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl">
         {title && !pathname.includes('/tasks/') && (
-          <div className="mb-6 hidden md:block">
-            <h1 className="text-2xl font-bold tracking-tight text-[#1a2b3c]">{title}</h1>
+          <div className="mb-6 hidden md:block border-l-4 border-primary pl-4">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">{title}</h1>
           </div>
         )}
         {children}
@@ -121,7 +145,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
           isActive('/') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Список</span>
+          <span className="text-[10px] font-black uppercase">Список</span>
         </Link>
         
         {canCreate && (
@@ -130,7 +154,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
             isActive('/tasks/new') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
           )}>
             <PlusCircle className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Создать</span>
+            <span className="text-[10px] font-black uppercase">Создать</span>
           </Link>
         )}
 
@@ -139,7 +163,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
           isActive('/profile') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
           <User className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Профиль</span>
+          <span className="text-[10px] font-black uppercase">Профиль</span>
         </Link>
       </nav>
     </div>

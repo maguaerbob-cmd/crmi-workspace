@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -11,6 +12,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -19,6 +22,8 @@ export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useFirebaseCore();
+
+  const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +43,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md shadow-2xl border-none bg-white rounded-2xl overflow-hidden">
-        <div className="h-1.5 bg-slate-900" />
+        <div className="h-1.5 bg-primary" />
         <CardHeader className="space-y-1 text-center pt-10">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-xl">C</div>
+            {logo && (
+              <div className="relative w-24 h-24">
+                <Image 
+                  src={logo.imageUrl} 
+                  alt="CRMI Logo" 
+                  fill 
+                  className="object-contain"
+                  data-ai-hint={logo.imageHint}
+                />
+              </div>
+            )}
           </div>
           <CardTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Авторизация</CardTitle>
           <CardDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">
@@ -61,7 +76,7 @@ export default function Login() {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl font-bold"
+                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-primary/10 rounded-xl font-bold"
               />
             </div>
             <div className="space-y-1.5">
@@ -72,10 +87,10 @@ export default function Login() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl font-bold"
+                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-primary/10 rounded-xl font-bold"
               />
             </div>
-            <Button type="submit" className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all" disabled={loading}>
+            <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all" disabled={loading}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Войти в систему"}
             </Button>
           </form>
@@ -83,7 +98,7 @@ export default function Login() {
         <CardFooter className="flex flex-col space-y-4 text-center bg-slate-50 p-6 border-t border-slate-100">
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Нет аккаунта?{" "}
-            <Link href="/register" className="text-slate-900 hover:underline">
+            <Link href="/register" className="text-primary hover:underline">
               Создать профиль
             </Link>
           </div>

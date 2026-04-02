@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "app-logo",
+      "description": "CRMI Organization Logo",
+      "imageUrl": "https://picsum.photos/seed/crmi-logo/400/400",
+      "imageHint": "CRMI logo"
+    }
+  ]
 }
