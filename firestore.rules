@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CRMI TaskFlow Security Rules - Optimized
+     * CRMI TaskFlow Security Rules - Public Read for Tasks
      */
 
     // --- Helper Functions ---
@@ -18,7 +18,7 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    // Проверка на права глобального администратора (управление всей организацией)
+    // Проверка на права глобального администратора
     function isGlobalAdmin(userData) {
       return userData.role == 'owner' || 
              userData.role == 'director' || 
@@ -49,13 +49,10 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      // Чтение задач: глобальные админы видят всё, остальные — только задачи своего отдела
-      allow read: if isSignedIn() && (
-        let userData = getUserData();
-        isGlobalAdmin(userData) || (userData.departmentId == resource.data.departmentId)
-      );
+      // Чтение задач теперь доступно всем (публично)
+      allow read: if true;
       
-      // Создание задачи: авторство должно быть верным, отдел должен совпадать (кроме админов)
+      // Создание задачи: только для авторизованных сотрудников
       allow create: if isSignedIn() && 
                     let userData = getUserData();
                     request.resource.data.createdBy == request.auth.uid &&

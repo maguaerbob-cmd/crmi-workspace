@@ -14,7 +14,7 @@ import { Search, FolderKanban, Filter, Building2, Clock } from 'lucide-react';
 import { DEPARTMENTS, ALL_ACCESS_DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
-  const { userData } = useAuth();
+  const { userData, user } = useAuth();
   const db = useFirestore();
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
@@ -32,22 +32,21 @@ export default function Dashboard() {
   }, [userData]);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!db || !userData || !userData.isApproved) return null;
+    if (!db) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Для прохождения проверки Security Rules, запрос должен быть либо с фильтром по отделу,
-    // либо без фильтра, если пользователь является глобальным администратором.
-    if (isGlobalManager) {
+    // Если пользователь не авторизован или является глобальным админом - показываем всё
+    if (!user || isGlobalManager) {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
-      // Обычные пользователи ОБЯЗАНЫ фильтровать по своему отделу в самом запросе
+      // Обычные сотрудники видят только задачи своего отдела (требование правил Firestore)
       return query(
         tasksRef, 
-        where('departmentId', '==', userData.departmentId),
+        where('departmentId', '==', userData?.departmentId),
         orderBy('createdAt', 'desc')
       );
     }
-  }, [db, userData, isGlobalManager]);
+  }, [db, user, userData, isGlobalManager]);
 
   const { data: tasks, isLoading } = useCollection(tasksQuery);
 
@@ -56,8 +55,8 @@ export default function Dashboard() {
     
     let result = tasks;
 
-    // Обычные пользователи видят только незавершенные задачи (уже отфильтрованные по отделу в query)
-    if (!isGlobalManager) {
+    // Обычные сотрудники (не админы) видят только незавершенные задачи своего отдела
+    if (user && !isGlobalManager) {
       result = result.filter(task => task.status !== 'завершено');
     }
 
@@ -70,15 +69,16 @@ export default function Dashboard() {
       );
     }
 
-    // Дополнительная фильтрация для менеджеров
-    if (isGlobalManager && selectedDept !== 'all') {
+    // Дополнительная фильтрация для менеджеров или гостей
+    if ((isGlobalManager || !user) && selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
 
     return result;
-  }, [tasks, search, selectedDept, isGlobalManager]);
+  }, [tasks, search, selectedDept, isGlobalManager, user]);
 
-  if (userData && !userData.isApproved && userData.role !== 'owner') {
+  // Показываем заглушку "Ожидание доступа" только если пользователь залогинен, но не одобрен
+  if (user && userData && !userData.isApproved && userData.role !== 'owner') {
     return (
       <Layout title="Ожидание доступа">
         <div className="flex flex-col items-center justify-center py-32 text-center max-w-md mx-auto space-y-6">
@@ -115,7 +115,7 @@ export default function Dashboard() {
             />
           </div>
           
-          {isGlobalManager && (
+          {(isGlobalManager || !user) && (
             <div className="w-full md:w-80">
               <Select value={selectedDept} onValueChange={setSelectedDept}>
                 <SelectTrigger className="h-12 bg-card border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20">
@@ -141,7 +141,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-muted-foreground" />
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              {!isGlobalManager ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData?.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
+              {(!isGlobalManager && user) ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData?.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
             </h2>
           </div>
           <div className="text-[10px] font-black text-primary-foreground bg-foreground px-3 py-1 uppercase rounded-sm">
@@ -159,7 +159,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTasks.map(task => {
               const isReader = userData?.role === 'reader';
-              const canEdit = !isReader && (
+              const canEdit = !!user && !isReader && (
                 isGlobalManager || 
                 userData?.id === task.responsibleUserId || 
                 userData?.id === task.createdBy ||

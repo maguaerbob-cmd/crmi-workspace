@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth as useFirebaseCore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2, Moon, Sun, Users } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2, Moon, Sun, Users, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,9 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   const { logo } = useAppSettings();
 
   useEffect(() => {
-    if (!loading && !user && !['/login', '/register'].includes(pathname)) {
+    // Главная страница ('/') теперь доступна всем. Редирект только для защищенных страниц.
+    const publicPaths = ['/login', '/register', '/'];
+    if (!loading && !user && !publicPaths.includes(pathname)) {
       router.push('/login');
     }
   }, [loading, user, router, pathname]);
@@ -42,16 +44,16 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
-  const canCreate = userData?.role === 'owner' || 
+  const canCreate = user && (userData?.role === 'owner' || 
                     userData?.role === 'director' || 
                     userData?.role === 'deputy_director' || 
                     userData?.role === 'head' || 
-                    userData?.role === 'inspector';
+                    userData?.role === 'inspector');
 
-  const canSeeStaff = userData?.role === 'owner' || 
+  const canSeeStaff = user && (userData?.role === 'owner' || 
                       userData?.role === 'director' || 
                       userData?.role === 'deputy_director' || 
-                      userData?.role === 'head';
+                      userData?.role === 'head');
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
@@ -62,10 +64,6 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
       <p className="text-sm font-medium text-muted-foreground animate-pulse">Загрузка системы...</p>
     </div>
   );
-
-  if (!user && !['/login', '/register'].includes(pathname)) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-24 md:pb-0 transition-colors duration-300">
@@ -114,21 +112,30 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
-            <Link href="/profile">
-              <Avatar className={cn(
-                "h-8 w-8 transition-all hover:ring-2 hover:ring-primary/20",
-                isActive('/profile') && "ring-2 ring-primary"
-              )}>
-                <AvatarImage src={userData?.photoURL} className="object-cover" />
-                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
-                  {userData?.name?.substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive ml-1">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            {user ? (
+              <>
+                <Link href="/profile">
+                  <Avatar className={cn(
+                    "h-8 w-8 transition-all hover:ring-2 hover:ring-primary/20",
+                    isActive('/profile') && "ring-2 ring-primary"
+                  )}>
+                    <AvatarImage src={userData?.photoURL} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                      {userData?.name?.substring(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive ml-1">
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button variant="default" size="sm" className="h-9 font-bold text-[10px] uppercase tracking-widest bg-primary text-primary-foreground px-4 rounded-xl">
+                  <LogIn className="w-3.5 h-3.5 mr-2" /> Войти
+                </Button>
+              </Link>
+            )}
           </nav>
         </div>
       </header>
@@ -159,14 +166,22 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
             {theme === 'dark' ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}
           </Button>
-          <Link href="/profile">
-            <Avatar className="h-9 w-9 border-2 border-primary/10">
-              <AvatarImage src={userData?.photoURL} className="object-cover" />
-              <AvatarFallback className="text-[11px] font-black text-primary uppercase">
-                {userData?.name?.substring(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          {user ? (
+            <Link href="/profile">
+              <Avatar className="h-9 w-9 border-2 border-primary/10">
+                <AvatarImage src={userData?.photoURL} className="object-cover" />
+                <AvatarFallback className="text-[11px] font-black text-primary uppercase">
+                  {userData?.name?.substring(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <LogIn className="w-5 h-5 text-primary" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -208,12 +223,12 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
           </Link>
         )}
 
-        <Link href="/profile" className={cn(
+        <Link href={user ? "/profile" : "/login"} className={cn(
           "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
-          isActive('/profile') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
+          (isActive('/profile') || isActive('/login')) ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
-          <User className="w-5 h-5" />
-          <span className="text-[9px] font-black uppercase">Профиль</span>
+          {user ? <User className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+          <span className="text-[9px] font-black uppercase">{user ? "Профиль" : "Войти"}</span>
         </Link>
       </nav>
     </div>
