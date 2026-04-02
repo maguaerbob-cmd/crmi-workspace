@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Building2 } from 'lucide-react';
+import { Shield, Mail, Building2, UserCog } from 'lucide-react';
 
 export default function AdminPage() {
   const { userData } = useAuth();
@@ -34,8 +34,8 @@ export default function AdminPage() {
     if (!db) return;
     updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { role: newRole });
     toast({ 
-      title: "Роль обновлена", 
-      description: "Права доступа пользователя были успешно изменены." 
+      title: "РОЛЬ ОБНОВЛЕНА", 
+      description: "ПРАВА ДОСТУПА ПОЛЬЗОВАТЕЛЯ БЫЛИ УСПЕШНО ИЗМЕНЕНЫ." 
     });
   };
 
@@ -43,8 +43,8 @@ export default function AdminPage() {
     if (!db) return;
     updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { departmentId: newDeptId });
     toast({ 
-      title: "Отдел обновлен", 
-      description: "Сотрудник успешно переведен в другой отдел." 
+      title: "ОТДЕЛ ОБНОВЛЕН", 
+      description: "СОТРУДНИК УСПЕШНО ПЕРЕВЕДЕН В ДРУГОЙ ОТДЕЛ." 
     });
   };
 
@@ -59,69 +59,70 @@ export default function AdminPage() {
     <Layout title="Управление">
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-muted-foreground font-medium">Загрузка списка сотрудников...</p>
+        <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">Загрузка списка сотрудников...</p>
       </div>
     </Layout>
   );
 
   return (
-    <Layout title="Управление доступом">
-      <div className="space-y-6">
-        <Card className="border-none shadow-sm overflow-hidden bg-white rounded-3xl">
-          <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black uppercase tracking-tight">Сотрудники</CardTitle>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                  {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Управление отделом: ${getDeptLabel(userData?.departmentId || '')}`}
-                </p>
-              </div>
+    <Layout title="Управление персоналом">
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center shadow-lg">
+              <UserCog className="w-5 h-5 text-white" />
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-slate-50">
-              {users?.map((user) => (
-                <div key={user.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-6 gap-6 hover:bg-slate-50/30 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-12 h-12 border-4 border-white shadow-sm shrink-0">
-                      <AvatarFallback className="bg-slate-900 text-white font-black text-xs">
+            <div>
+              <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Сотрудники</h1>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Отдел: ${getDeptLabel(userData?.departmentId || '')}`}
+              </p>
+            </div>
+          </div>
+          <div className="text-[10px] font-black text-white bg-slate-950 px-4 py-1.5 uppercase rounded-lg shadow-sm">
+            Всего: {users?.length || 0}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          {users?.map((user) => (
+            <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white rounded-2xl overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="w-14 h-14 border-4 border-slate-50 shadow-sm shrink-0">
+                      <AvatarFallback className="bg-slate-950 text-white font-black text-sm">
                         {user.name?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex flex-col space-y-1.5">
-                      <h3 className="text-sm font-black text-slate-900 leading-none uppercase tracking-tight">{user.name}</h3>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                          <Mail className="w-3 h-3" />
-                          <span>{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                          <Building2 className="w-3 h-3 text-slate-300" />
-                          <span className="uppercase tracking-tighter">{getDeptLabel(user.departmentId)}</span>
-                        </div>
+                    <div className="flex flex-col space-y-1">
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{user.name}</h3>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                        <Mail className="w-3 h-3" />
+                        <span>{user.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                        <Building2 className="w-3 h-3 text-slate-300" />
+                        <span>{getDeptLabel(user.departmentId)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Контейнер с селекторами в один ряд */}
-                  <div className="flex flex-wrap items-end gap-2 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
+                  <div className="flex flex-wrap items-center gap-3 md:gap-4 pt-4 md:pt-0 border-t md:border-none border-slate-50">
                     {userData?.role === 'owner' && (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Отдел</span>
+                      <div className="space-y-1.5">
+                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest ml-1">Отдел</p>
                         <Select 
                           value={user.departmentId} 
                           onValueChange={(v) => handleDepartmentChange(user.id, v)}
                         >
-                          <SelectTrigger className="h-8 w-[140px] text-[9px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-lg">
+                          <SelectTrigger className="h-10 w-[180px] text-[10px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-xl focus:ring-slate-900/10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
                             {DEPARTMENTS.map(dept => (
-                              <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-widest">
+                              <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-wider">
                                 {dept.label}
                               </SelectItem>
                             ))}
@@ -130,11 +131,11 @@ export default function AdminPage() {
                       </div>
                     )}
 
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Роль</span>
+                    <div className="space-y-1.5">
+                      <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest ml-1">Роль доступа</p>
                       {user.role === 'owner' ? (
-                        <div className="flex items-center gap-2 text-[9px] font-black text-white px-3 bg-slate-900 rounded-lg shadow-sm uppercase tracking-widest h-8">
-                          <Shield className="w-2.5 h-2.5" />
+                        <div className="flex items-center gap-2 text-[10px] font-black text-white px-4 bg-slate-950 rounded-xl shadow-sm uppercase tracking-widest h-10">
+                          <Shield className="w-3 h-3" />
                           OWNER
                         </div>
                       ) : (
@@ -143,12 +144,12 @@ export default function AdminPage() {
                           onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
-                          <SelectTrigger className="h-8 w-[100px] text-[9px] font-black uppercase tracking-widest shadow-sm bg-slate-50 border-none focus:ring-1 focus:ring-slate-900/10 rounded-lg">
+                          <SelectTrigger className="h-10 w-[140px] text-[10px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-xl focus:ring-slate-900/10">
                             <SelectValue placeholder="Роль" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
                             {getAvailableRoles(userData?.role || '').map(role => (
-                              <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-widest">
+                              <SelectItem key={role} value={role} className="text-[10px] font-black uppercase tracking-wider">
                                 {ROLE_LABELS[role as Role]}
                               </SelectItem>
                             ))}
@@ -158,10 +159,10 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </Layout>
   );
