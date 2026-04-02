@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/router';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth as useFirebaseCore } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2 } from 'lucide-react';
@@ -15,23 +17,23 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
-  const { userData, loading, authenticated, user } = useAuth();
+  const { userData, loading, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const auth = useFirebaseCore();
 
   useEffect(() => {
-    // Redirect to login if not authenticated and not on auth pages
-    if (!loading && !user && !['/login', '/register'].includes(router.pathname)) {
+    if (!loading && !user && !['/login', '/register'].includes(pathname)) {
       router.push('/login');
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, pathname]);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/login');
   };
 
-  const isActive = (path: string) => router.pathname === path;
+  const isActive = (path: string) => pathname === path;
 
   const canCreate = userData?.role === 'owner' || userData?.role === 'head' || userData?.role === 'inspector';
 
@@ -45,15 +47,13 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
     </div>
   );
 
-  // Prevent flash of content for unauthorized users
-  if (!user && !['/login', '/register'].includes(router.pathname)) {
+  if (!user && !['/login', '/register'].includes(pathname)) {
     return null;
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-24 md:pb-0">
-      {/* Desktop Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md hidden md:block font-body">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md hidden md:block">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-5xl">
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold shadow-sm">C</div>
@@ -85,7 +85,6 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
         </div>
       </header>
 
-      {/* Mobile Top Bar */}
       <div className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {showBack ? (
@@ -106,8 +105,8 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
         </Link>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl font-body">
-        {title && !router.pathname.includes('/tasks/') && (
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl">
+        {title && !pathname.includes('/tasks/') && (
           <div className="mb-6 hidden md:block">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
           </div>
@@ -115,7 +114,6 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
         {children}
       </main>
 
-      {/* Bottom Navigation (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t px-4 pt-3 pb-6 flex justify-around items-center shadow-[0_-5px_20px_rgba(0,0,0,0.05)] rounded-t-3xl">
         <Link href="/" className={cn(
           "flex flex-col items-center gap-1.5 px-4 py-1 rounded-xl transition-all duration-200",

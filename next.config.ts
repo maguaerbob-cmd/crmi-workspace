@@ -14,11 +14,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
   },
-  // Static export support
-  output: 'export',
-  distDir: 'out',
-  trailingSlash: true,
-  // Required for Pages Router in newer Next.js versions if app dir exists
+  // Удалена настройка static export, так как Genkit требует серверную среду
   reactStrictMode: true,
 };
 
