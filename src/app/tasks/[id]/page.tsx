@@ -50,7 +50,7 @@ export default function TaskDetails() {
   }, [task]);
 
   const handleToggleCheck = (index: number) => {
-    if (!taskRef) return;
+    if (!taskRef || !canEdit) return;
     const newList = [...checklist];
     newList[index].done = !newList[index].done;
     setChecklist(newList);
@@ -58,33 +58,36 @@ export default function TaskDetails() {
   };
 
   const handleStatusChange = (newStatus: TaskStatus) => {
-    if (!taskRef) return;
+    if (!taskRef || !canEdit) return;
     updateDocumentNonBlocking(taskRef as DocumentReference, { status: newStatus });
     toast({ title: "СТАТУС ОБНОВЛЕН", description: `НОВЫЙ СТАТУС: ${newStatus.toUpperCase()}` });
   };
 
   const handleDelete = () => {
-    if (!taskRef) return;
+    if (!taskRef || !canDelete) return;
     deleteDocumentNonBlocking(taskRef as DocumentReference);
     toast({ title: "ЗАДАЧА УДАЛЕНА", description: "ЗАПИСЬ ИСКЛЮЧЕНА ИЗ БАЗЫ ДАННЫХ" });
     router.push('/');
   };
 
-  // Права на редактирование
-  const canEdit = userData?.role === 'owner' || 
+  // Права на редактирование: Читатель (reader) не может изменять задачи в любом случае
+  const isReader = userData?.role === 'reader';
+  const canEdit = !isReader && (
+                  userData?.role === 'owner' || 
                   (userData?.role === 'head' && userData?.departmentId === task?.departmentId) ||
                   userData?.id === task?.responsibleUserId ||
-                  userData?.id === task?.createdBy;
+                  userData?.id === task?.createdBy
+                );
 
   // Права на удаление:
   // 1. Владелец может все
-  // 2. Создатель или Руководитель отдела могут удалять только НЕ завершенные задачи
+  // 2. Создатель или Руководитель отдела (не читатели) могут удалять только НЕ завершенные задачи
   const isCreator = userData?.id === task?.createdBy;
   const isHeadOfDept = userData?.role === 'head' && userData?.departmentId === task?.departmentId;
   const isOwner = userData?.role === 'owner';
   const isCompleted = task?.status === 'завершено';
 
-  const canDelete = isOwner || ((isCreator || isHeadOfDept) && !isCompleted);
+  const canDelete = !isReader && (isOwner || ((isCreator || isHeadOfDept) && !isCompleted));
 
   if (isLoading) return (
     <Layout title="Загрузка...">
@@ -238,13 +241,14 @@ export default function TaskDetails() {
                         id={`item-${index}`} 
                         checked={item.done} 
                         onCheckedChange={() => handleToggleCheck(index)}
+                        disabled={!canEdit}
                         className="w-5 h-5 rounded-md border-slate-300"
                       />
                       <label 
                         htmlFor={`item-${index}`} 
                         className={`text-xs font-bold cursor-pointer select-none flex-1 leading-none uppercase ${
                           item.done ? 'line-through text-slate-400' : 'text-slate-700'
-                        }`}
+                        } ${!canEdit && 'cursor-default'}`}
                       >
                         {item.text}
                       </label>
@@ -254,27 +258,29 @@ export default function TaskDetails() {
               </div>
             )}
 
-            <div className="pt-8 border-t border-slate-100 space-y-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Обновить статус</p>
-              <div className="flex flex-wrap gap-2">
-                {STATUSES.map((status) => (
-                  <Button
-                    key={status}
-                    variant={task.status === status ? "default" : "secondary"}
-                    size="sm"
-                    className={`rounded-xl px-5 h-10 text-[10px] font-black uppercase tracking-widest transition-all ${
-                      task.status === status 
-                      ? 'bg-slate-950 text-white shadow-lg' 
-                      : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                    }`}
-                    onClick={() => handleStatusChange(status)}
-                  >
-                    {status === 'завершено' && <CheckCircle className="w-3.5 h-3.5 mr-2" />}
-                    {status}
-                  </Button>
-                ))}
+            {canEdit && (
+              <div className="pt-8 border-t border-slate-100 space-y-4">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Обновить статус</p>
+                <div className="flex flex-wrap gap-2">
+                  {STATUSES.map((status) => (
+                    <Button
+                      key={status}
+                      variant={task.status === status ? "default" : "secondary"}
+                      size="sm"
+                      className={`rounded-xl px-5 h-10 text-[10px] font-black uppercase tracking-widest transition-all ${
+                        task.status === status 
+                        ? 'bg-slate-950 text-white shadow-lg' 
+                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      }`}
+                      onClick={() => handleStatusChange(status)}
+                    >
+                      {status === 'завершено' && <CheckCircle className="w-3.5 h-3.5 mr-2" />}
+                      {status}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

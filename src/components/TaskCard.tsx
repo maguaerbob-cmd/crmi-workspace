@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -46,6 +45,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const handleStatusChange = (e: React.MouseEvent, newStatus: TaskStatus) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!canEdit) return;
     const taskRef = doc(db, 'tasks', id);
     updateDocumentNonBlocking(taskRef, { status: newStatus });
     toast({ title: "СТАТУС ОБНОВЛЕН", description: `${newStatus.toUpperCase()}` });
@@ -68,33 +68,35 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </Badge>
             <div className="flex items-center gap-1">
               {canEdit && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7 text-slate-300 hover:text-slate-950 hover:bg-slate-50"
-                  onClick={handleEditClick}
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </Button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:bg-slate-50">
-                    <MoreVertical className="w-3.5 h-3.5" />
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-slate-300 hover:text-slate-950 hover:bg-slate-50"
+                    onClick={handleEditClick}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[140px] rounded-xl border-none shadow-2xl p-1">
-                  {STATUSES.map((s) => (
-                    <DropdownMenuItem 
-                      key={s} 
-                      onClick={(e) => handleStatusChange(e as any, s)}
-                      className={`text-[9px] font-black uppercase p-2 hover:bg-slate-50 rounded-lg cursor-pointer ${status === s ? "bg-slate-50 text-slate-900" : "text-slate-400"}`}
-                    >
-                      {s}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:bg-slate-50">
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[140px] rounded-xl border-none shadow-2xl p-1">
+                      {STATUSES.map((s) => (
+                        <DropdownMenuItem 
+                          key={s} 
+                          onClick={(e) => handleStatusChange(e as any, s)}
+                          className={`text-[9px] font-black uppercase p-2 hover:bg-slate-50 rounded-lg cursor-pointer ${status === s ? "bg-slate-50 text-slate-900" : "text-slate-400"}`}
+                        >
+                          {s}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
             </div>
           </div>
           <CardTitle className="text-sm font-black line-clamp-2 text-slate-900 uppercase tracking-tight leading-tight">

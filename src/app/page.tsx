@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -109,15 +108,25 @@ export default function Dashboard() {
           </div>
         ) : filteredTasks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTasks.map(task => (
-              <TaskCard 
-                key={task.id} 
-                {...task} 
-                datetime={task.dateTime} 
-                createdByName={task.createdByName}
-                canEdit={userData?.role === 'owner' || userData?.id === task.responsibleUserId || userData?.id === task.createdBy}
-              />
-            ))}
+            {filteredTasks.map(task => {
+              // Роль "reader" никогда не может редактировать задачи
+              const isReader = userData?.role === 'reader';
+              const canEdit = !isReader && (
+                userData?.role === 'owner' || 
+                userData?.id === task.responsibleUserId || 
+                userData?.id === task.createdBy
+              );
+
+              return (
+                <TaskCard 
+                  key={task.id} 
+                  {...task} 
+                  datetime={task.dateTime} 
+                  createdByName={task.createdByName}
+                  canEdit={canEdit}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl shadow-sm border border-slate-100 border-dashed">
