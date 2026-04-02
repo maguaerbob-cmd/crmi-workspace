@@ -30,16 +30,20 @@ export default function AdminPage() {
   const db = useFirestore();
   const { toast } = useToast();
 
+  const isGlobalManager = userData?.role === 'owner' || userData?.role === 'director' || userData?.role === 'deputy_director';
+
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
     const usersRef = collection(db, 'userProfiles');
     
-    if (userData.role === 'owner') {
+    // Владелец, Директор и Зам. директора видят всех
+    if (isGlobalManager) {
       return query(usersRef);
     } else {
+      // Остальные (например, Руководитель) видят только свой отдел
       return query(usersRef, where('departmentId', '==', userData.departmentId));
     }
-  }, [db, userData]);
+  }, [db, userData, isGlobalManager]);
 
   const { data: users, isLoading } = useCollection(usersQuery);
 
@@ -83,6 +87,9 @@ export default function AdminPage() {
 
   const getAvailableRoles = (currentUserRole: string) => {
     if (currentUserRole === 'owner') return ROLES;
+    if (currentUserRole === 'director' || currentUserRole === 'deputy_director') {
+      return ["director", "deputy_director", "head", "inspector", "reader"] as const;
+    }
     return ["head", "inspector", "reader"] as const;
   };
 
@@ -162,7 +169,7 @@ export default function AdminPage() {
               <div>
                 <h1 className="text-xl font-black text-foreground uppercase tracking-tight">Сотрудники</h1>
                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                  {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Отдел: ${getDeptLabel(userData?.departmentId || '')}`}
+                  {isGlobalManager ? 'Общий список организации' : `Отдел: ${getDeptLabel(userData?.departmentId || '')}`}
                 </p>
               </div>
             </div>
@@ -174,7 +181,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 gap-3">
             {approvedUsers.map((user) => (
               <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
-                {userData?.role === 'owner' && userData?.id !== user.id && (
+                {(userData?.role === 'owner' || (isGlobalManager && user.role !== 'owner')) && userData?.id !== user.id && (
                   <div className="absolute top-3 right-3 z-10">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -231,11 +238,12 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
-                      {userData?.role === 'owner' && (
+                      {isGlobalManager && (
                         <div className="flex-1 sm:flex-initial">
                           <Select 
                             value={user.departmentId} 
                             onValueChange={(v) => handleDepartmentChange(user.id, v)}
+                            disabled={user.role === 'owner' || (userData?.role !== 'owner' && user.role === 'director')}
                           >
                             <SelectTrigger className="h-8 w-full sm:w-[120px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg focus:ring-primary/10">
                               <SelectValue />
@@ -261,7 +269,7 @@ export default function AdminPage() {
                           <Select 
                             value={user.role} 
                             onValueChange={(v) => handleRoleChange(user.id, v as Role)}
-                            disabled={userData?.role !== 'owner' && (user.role === 'head' || user.role === 'director' || user.role === 'deputy_director')}
+                            disabled={!isGlobalManager || (userData?.role !== 'owner' && user.role === 'director')}
                           >
                             <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg focus:ring-primary/10">
                               <SelectValue placeholder="Роль" />
