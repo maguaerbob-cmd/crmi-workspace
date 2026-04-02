@@ -35,10 +35,11 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
+  // Теперь и руководитель (head), и инспектор (inspector) видят кнопку создания
   const canCreate = userData?.role === 'owner' || userData?.role === 'head' || userData?.role === 'inspector';
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8] gap-4">
       <div className="relative">
         <div className="w-16 h-16 bg-primary/10 rounded-2xl animate-pulse" />
         <Loader2 className="w-8 h-8 text-primary animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -52,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-24 md:pb-0">
+    <div className="min-h-screen flex flex-col bg-[#f0f4f8] pb-24 md:pb-0">
       <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md hidden md:block">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-5xl">
           <Link href="/" className="flex items-center space-x-2">
@@ -63,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
           <nav className="flex items-center space-x-1">
             <Link href="/">
               <Button variant={isActive('/') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9">
-                <LayoutDashboard className="w-4 h-4" /> Задачи
+                <LayoutDashboard className="w-4 h-4" /> Список
               </Button>
             </Link>
             {canCreate && (
@@ -108,43 +109,37 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
       <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl">
         {title && !pathname.includes('/tasks/') && (
           <div className="mb-6 hidden md:block">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a2b3c]">{title}</h1>
           </div>
         )}
         {children}
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t px-4 pt-3 pb-6 flex justify-around items-center shadow-[0_-5px_20px_rgba(0,0,0,0.05)] rounded-t-3xl">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-white/95 backdrop-blur-md border px-2 py-2 flex justify-around items-center shadow-lg rounded-2xl">
         <Link href="/" className={cn(
-          "flex flex-col items-center gap-1.5 px-4 py-1 rounded-xl transition-all duration-200",
-          isActive('/') ? "text-primary scale-110" : "text-muted-foreground hover:text-primary/60"
+          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+          isActive('/') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
-          <div className={cn("p-1 rounded-lg", isActive('/') && "bg-primary/10")}>
-            <LayoutDashboard className="w-6 h-6" />
-          </div>
-          <span className="text-[11px] font-bold tracking-tight">Задачи</span>
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px] font-bold">Список</span>
         </Link>
         
         {canCreate && (
           <Link href="/tasks/new" className={cn(
-            "flex flex-col items-center gap-1.5 px-4 py-1 rounded-xl transition-all duration-200",
-            isActive('/tasks/new') ? "text-primary scale-110" : "text-muted-foreground hover:text-primary/60"
+            "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+            isActive('/tasks/new') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
           )}>
-            <div className={cn("p-1 rounded-lg", isActive('/tasks/new') && "bg-primary/10")}>
-              <PlusCircle className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-bold tracking-tight">Создать</span>
+            <PlusCircle className="w-5 h-5" />
+            <span className="text-[10px] font-bold">Создать</span>
           </Link>
         )}
 
         <Link href="/profile" className={cn(
-          "flex flex-col items-center gap-1.5 px-4 py-1 rounded-xl transition-all duration-200",
-          isActive('/profile') ? "text-primary scale-110" : "text-muted-foreground hover:text-primary/60"
+          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+          isActive('/profile') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
-          <div className={cn("p-1 rounded-lg", isActive('/profile') && "bg-primary/10")}>
-            <User className="w-6 h-6" />
-          </div>
-          <span className="text-[11px] font-bold tracking-tight">Профиль</span>
+          <User className="w-5 h-5" />
+          <span className="text-[10px] font-bold">Профиль</span>
         </Link>
       </nav>
     </div>
