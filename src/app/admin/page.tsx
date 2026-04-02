@@ -96,8 +96,9 @@ export default function AdminPage() {
     </Layout>
   );
 
-  const pendingUsers = users?.filter(u => !u.isApproved) || [];
-  const approvedUsers = users?.filter(u => u.isApproved) || [];
+  // Фильтруем пользователей: исключаем Владельца (role: 'owner') из всех списков
+  const pendingUsers = users?.filter(u => !u.isApproved && u.role !== 'owner') || [];
+  const approvedUsers = users?.filter(u => u.isApproved && u.role !== 'owner') || [];
 
   return (
     <Layout title="Управление персоналом">
@@ -170,96 +171,90 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
-            {approvedUsers.map((user) => (
-              <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
-                {/* Удаление доступно только Владельцу */}
-                {isOwner && userData?.id !== user.id && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-2xl border-none shadow-2xl bg-card">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-sm font-black uppercase tracking-tight">Удалить сотрудника?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-xs font-bold text-muted-foreground uppercase leading-relaxed">
-                            Профиль {user.name} будет навсегда исключен из системы. Это действие нельзя отменить.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="gap-2">
-                          <AlertDialogCancel className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-2">Отмена</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-lg border-none"
-                          >
-                            Удалить
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
+          {approvedUsers.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3">
+              {approvedUsers.map((user) => (
+                <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
+                  {/* Удаление доступно только Владельцу */}
+                  {isOwner && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-2xl border-none shadow-2xl bg-card">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-sm font-black uppercase tracking-tight">Удалить сотрудника?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-xs font-bold text-muted-foreground uppercase leading-relaxed">
+                              Профиль {user.name} будет навсегда исключен из системы. Это действие нельзя отменить.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="gap-2">
+                            <AlertDialogCancel className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-2">Отмена</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-lg border-none"
+                            >
+                              Удалить
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
 
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 border-2 border-background shadow-sm shrink-0">
-                        <AvatarImage src={user.photoURL} className="object-cover" />
-                        <AvatarFallback className="bg-foreground text-background font-black text-xs uppercase">
-                          {user.name?.substring(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex flex-col min-w-0 pr-10">
-                        <h3 className="text-sm font-black text-foreground uppercase tracking-tight truncate">
-                          {user.name}
-                        </h3>
-                        <div className="flex flex-col space-y-0.5 mt-0.5">
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
-                            <Mail className="w-3 h-3 opacity-50" />
-                            <span className="truncate">{user.email}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
-                            <Building2 className="w-3 h-3 opacity-50" />
-                            <span className="truncate">{getDeptLabel(user.departmentId)}</span>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-12 h-12 border-2 border-background shadow-sm shrink-0">
+                          <AvatarImage src={user.photoURL} className="object-cover" />
+                          <AvatarFallback className="bg-foreground text-background font-black text-xs uppercase">
+                            {user.name?.substring(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex flex-col min-w-0 pr-10">
+                          <h3 className="text-sm font-black text-foreground uppercase tracking-tight truncate">
+                            {user.name}
+                          </h3>
+                          <div className="flex flex-col space-y-0.5 mt-0.5">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                              <Mail className="w-3 h-3 opacity-50" />
+                              <span className="truncate">{user.email}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                              <Building2 className="w-3 h-3 opacity-50" />
+                              <span className="truncate">{getDeptLabel(user.departmentId)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
-                      {/* Смена отдела и роли доступна только Владельцу */}
-                      {isOwner ? (
-                        <>
-                          <div className="flex-1 sm:flex-initial">
-                            <Select 
-                              value={user.departmentId} 
-                              onValueChange={(v) => handleDepartmentChange(user.id, v)}
-                              disabled={user.role === 'owner'}
-                            >
-                              <SelectTrigger className="h-8 w-full sm:w-[120px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-none shadow-2xl">
-                                {DEPARTMENTS.map(dept => (
-                                  <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-wider">
-                                    {dept.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                      <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
+                        {/* Смена отдела и роли доступна только Владельцу */}
+                        {isOwner ? (
+                          <>
+                            <div className="flex-1 sm:flex-initial">
+                              <Select 
+                                value={user.departmentId} 
+                                onValueChange={(v) => handleDepartmentChange(user.id, v)}
+                              >
+                                <SelectTrigger className="h-8 w-full sm:w-[120px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-none shadow-2xl">
+                                  {DEPARTMENTS.map(dept => (
+                                    <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-wider">
+                                      {dept.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                          <div className="flex-1 sm:flex-initial">
-                            {user.role === 'owner' ? (
-                              <div className="flex items-center justify-center gap-2 text-[9px] font-black text-background bg-foreground px-4 rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
-                                <Shield className="w-3 h-3" />
-                                OWNER
-                              </div>
-                            ) : (
+                            <div className="flex-1 sm:flex-initial">
                               <Select 
                                 value={user.role} 
                                 onValueChange={(v) => handleRoleChange(user.id, v as Role)}
@@ -269,34 +264,41 @@ export default function AdminPage() {
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
-                                    <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-wider">
-                                      {label}
-                                    </SelectItem>
+                                    // Владелец может назначать любую роль, кроме owner (так как он уже скрыт)
+                                    role !== 'owner' && (
+                                      <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-wider">
+                                        {label}
+                                      </SelectItem>
+                                    )
                                   ))}
                                 </SelectContent>
                               </Select>
-                            )}
+                            </div>
+                          </>
+                        ) : (
+                          /* Отображение для Директоров и Зам. директоров (только текст) */
+                          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                            <Badge variant="outline" className="h-7 text-[8px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground whitespace-nowrap">
+                              <Building2 className="w-2.5 h-2.5 mr-1.5 opacity-60" />
+                              {getDeptLabel(user.departmentId)}
+                            </Badge>
+                            <Badge variant="secondary" className="h-7 text-[8px] font-black uppercase tracking-widest bg-foreground text-background border-none whitespace-nowrap">
+                              <Briefcase className="w-2.5 h-2.5 mr-1.5 opacity-60" />
+                              {ROLE_LABELS[user.role as Role]}
+                            </Badge>
                           </div>
-                        </>
-                      ) : (
-                        /* Отображение для Директоров и Зам. директоров (только текст) */
-                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                          <Badge variant="outline" className="h-7 text-[8px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground whitespace-nowrap">
-                            <Building2 className="w-2.5 h-2.5 mr-1.5 opacity-60" />
-                            {getDeptLabel(user.departmentId)}
-                          </Badge>
-                          <Badge variant="secondary" className="h-7 text-[8px] font-black uppercase tracking-widest bg-foreground text-background border-none whitespace-nowrap">
-                            <Briefcase className="w-2.5 h-2.5 mr-1.5 opacity-60" />
-                            {ROLE_LABELS[user.role as Role]}
-                          </Badge>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 bg-muted/10 rounded-3xl border border-dashed border-border">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Список сотрудников пуст</p>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
