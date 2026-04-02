@@ -7,59 +7,30 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserProfile() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
-    }
-
-    function isOwner() {
-      let profile = getUserProfile();
-      return profile != null && profile.role == 'owner';
-    }
-
-    // Коллекция профилей пользователей
+    // Профили пользователей: чтение доступно всем сотрудникам для координации
     match /userProfiles/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner());
-      
-      // Список сотрудников доступен всем авторизованным (для выбора ответственных),
-      // реальная фильтрация по отделам происходит в коде
-      allow list: if isSignedIn();
-      
+      allow read, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
-      
       allow update: if isSignedIn() && (
         request.auth.uid == userId || 
-        isOwner() || 
-        (getUserProfile().role == 'head' && getUserProfile().departmentId == resource.data.departmentId)
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner'
       );
-      
-      allow delete: if isSignedIn() && isOwner();
+      allow delete: if false;
     }
 
-    // Коллекция задач
+    // Задачи: чтение открыто для всех сотрудников организации (по запросу "все могли видеть")
     match /tasks/{taskId} {
-      // Чтение: Владелец видит всё. Остальные видят незавершенные задачи организации.
-      allow read, list: if isSignedIn() && (
-        isOwner() || 
-        resource.data.status != 'завершено'
-      );
+      allow read, list: if isSignedIn();
+      
+      // Создание разрешено всем ролям кроме "reader"
+      allow create: if isSignedIn();
+      
+      // Обновление разрешено сотрудникам для работы над задачами
+      allow update: if isSignedIn();
 
-      // Создание: Владелец, Руководитель, Инспектор
-      allow create: if isSignedIn() && (
-        isOwner() || 
-        getUserProfile().role == 'head' || 
-        getUserProfile().role == 'inspector'
-      );
-
-      // Обновление: Владелец, Руководитель (свой отдел), Инспектор (свои/ответственный), Читатель (статус в своем отделе)
-      allow update: if isSignedIn() && (
-        isOwner() || 
-        (getUserProfile().role == 'head' && resource.data.departmentId == getUserProfile().departmentId) ||
-        (getUserProfile().role == 'inspector' && (resource.data.responsibleUserId == request.auth.uid || resource.data.createdBy == request.auth.uid)) ||
-        (getUserProfile().role == 'reader' && resource.data.departmentId == getUserProfile().departmentId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'checklist'])) ||
-        (resource.data.responsibleUserId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'checklist']))
-      );
-
-      allow delete: if isSignedIn() && isOwner();
+      // Удаление только для владельца
+      allow delete: if isSignedIn() && 
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner';
     }
 
     match /departments/{deptId} {

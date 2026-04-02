@@ -16,14 +16,14 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 221 83% 53%; /* Blue 600 - Профессиональный синий */
+    --accent: 215 25% 27%; /* Slate 700 для акцентов */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 0% 0%; /* Черный для деструктивных действий */
     --destructive-foreground: 210 40% 98%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 47% 11%;
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 }
 
@@ -32,7 +32,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#f1f5f9] text-slate-900 font-sans antialiased;
+    @apply bg-[#f1f5f9] text-slate-950 font-sans antialiased;
   }
 }
 
@@ -41,21 +41,26 @@
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  @apply bg-slate-300 rounded-full hover:bg-slate-900 transition-colors;
 }
 
 /* Строгие профессиональные инпуты */
 input, textarea, select {
-  @apply focus:ring-slate-900/5 !important;
+  @apply focus:ring-slate-950/10 !important;
+  @apply border-2 !important;
 }
 
 /* Кастомные тени для "индустриального" стиля */
 .shadow-strict {
-  box-shadow: 0 4px 0 0 rgba(15, 23, 42, 0.05);
+  box-shadow: 4px 4px 0 0 rgba(15, 23, 42, 1);
+}
+
+.card-industrial {
+  @apply border-2 border-slate-950 bg-white shadow-[4px_4px_0_0_rgba(15,23,42,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_rgba(15,23,42,1)];
 }

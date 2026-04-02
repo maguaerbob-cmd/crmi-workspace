@@ -14,7 +14,7 @@ export type Role = typeof ROLES[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   owner: "Владелец",
-  head: "Руководитель отдела",
+  head: "Руководитель",
   inspector: "Инспектор",
   reader: "Читатель"
 };
@@ -23,9 +23,9 @@ export const PRIORITIES = ["низкий", "средний", "высокий"] a
 export type Priority = typeof PRIORITIES[number];
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
-  "низкий": "bg-green-500",
-  "средний": "bg-yellow-500",
-  "высокий": "bg-red-500"
+  "низкий": "bg-slate-400",
+  "средний": "bg-slate-700",
+  "высокий": "bg-slate-950"
 };
 
 export const STATUSES = ["запланировано", "в процессе", "завершено"] as const;
