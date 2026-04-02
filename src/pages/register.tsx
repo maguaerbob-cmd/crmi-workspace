@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth as useFirebaseAuth } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { DEPARTMENTS, Department } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,28 +17,33 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState<Department | ''>('');
+  const [departmentId, setDepartmentId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!department) {
+    if (!departmentId) {
       toast({ variant: "destructive", title: "Ошибка", description: "Выберите отдел" });
       return;
     }
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
+      const user = userCredential.user;
+      
+      await setDoc(doc(db, 'userProfiles', user.uid), {
+        id: user.uid,
         name,
         email,
-        department,
+        departmentId,
         role: 'reader', // Default role
         createdAt: new Date().toISOString()
       });
+      
       router.push('/');
     } catch (error: any) {
       toast({
@@ -95,16 +101,17 @@ export default function Register() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Отдел</Label>
-              <Select onValueChange={(v) => setDepartment(v as Department)}>
+              <Select onValueChange={setDepartmentId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите отдел" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="creative-youth-center">Центр по работе с креативной молодежью</SelectItem>
+                  <SelectItem value="youth-service-center">Центр Обслуживания Молодежи</SelectItem>
+                  <SelectItem value="volunteering-center">Центр волонтерства</SelectItem>
+                  <SelectItem value="analysis-monitoring-center">Центр анализа и мониторинга</SelectItem>
+                  <SelectItem value="media-center">Медиа-центр</SelectItem>
+                  <SelectItem value="technical-service-center">Центр технического обслуживания</SelectItem>
                 </SelectContent>
               </Select>
             </div>

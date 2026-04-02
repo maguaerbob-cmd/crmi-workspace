@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, updateDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useDoc, useFirestore, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Priority, PRIORITIES, PRIORITY_COLORS, TaskStatus, STATUSES } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,20 +14,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, MapPin, User, ChevronLeft, Edit3, Save, RotateCcw, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, User, ChevronLeft, Edit3, Save, RotateCcw } from 'lucide-react';
 
 export default function TaskDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { userData } = useAuth();
+  const db = useFirestore();
   const { toast } = useToast();
 
-  const [task, setTask] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const taskDocRef = useMemo(() => {
+    if (!db || !id) return null;
+    return doc(db, 'tasks', id as string);
+  }, [db, id]);
 
-  // Edit fields
+  const { data: task, isLoading: loading } = useDoc<any>(taskDocRef);
+
+  const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editPlace, setEditPlace] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -35,67 +38,48 @@ export default function TaskDetail() {
   const [editDatetime, setEditDatetime] = useState('');
 
   useEffect(() => {
-    if (!id) return;
+    if (task) {
+      setEditTitle(task.title);
+      setEditPlace(task.place);
+      setEditDescription(task.description);
+      setEditPriority(task.priority);
+      setEditDatetime(task.dateTime || '');
+    }
+  }, [task]);
 
-    const unsubscribe = onSnapshot(doc(db, 'tasks', id as string), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setTask({ id: docSnap.id, ...data });
-        setEditTitle(data.title);
-        setEditPlace(data.place);
-        setEditDescription(data.description);
-        setEditPriority(data.priority);
-        setEditDatetime(data.datetime);
-      } else {
-        toast({ variant: "destructive", title: "Ошибка", description: "Задача не найдена" });
-        router.push('/');
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [id]);
-
-  const toggleChecklistItem = async (index: number) => {
-    if (!task) return;
+  const toggleChecklistItem = (index: number) => {
+    if (!task || !taskDocRef) return;
     const newChecklist = [...task.checklist];
-    newChecklist[index].done = !newChecklist[index].done;
-    await updateDoc(doc(db, 'tasks', task.id), { checklist: newChecklist });
+    newChecklist[index] = { ...newChecklist[index], done: !newChecklist[index].done };
+    updateDocumentNonBlocking(taskDocRef, { checklist: newChecklist });
   };
 
-  const handleStatusChange = async (newStatus: TaskStatus) => {
-    if (!task) return;
+  const handleStatusChange = (newStatus: TaskStatus) => {
+    if (!task || !taskDocRef) return;
     if (newStatus === 'завершено') {
       if (!confirm('Вы уверены, что хотите завершить задачу? Она будет скрыта из общего списка.')) return;
     }
-    await updateDoc(doc(db, 'tasks', task.id), { status: newStatus });
+    updateDocumentNonBlocking(taskDocRef, { status: newStatus });
     toast({ title: "Статус обновлен", description: `Задача теперь в статусе: ${newStatus}` });
   };
 
-  const handleSaveEdit = async () => {
-    if (!task) return;
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, 'tasks', task.id), {
-        title: editTitle,
-        place: editPlace,
-        description: editDescription,
-        priority: editPriority,
-        datetime: editDatetime
-      });
-      setEditing(false);
-      toast({ title: "Обновлено", description: "Данные задачи сохранены" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Не удалось сохранить" });
-    } finally {
-      setSaving(false);
-    }
+  const handleSaveEdit = () => {
+    if (!task || !taskDocRef) return;
+    updateDocumentNonBlocking(taskDocRef, {
+      title: editTitle,
+      place: editPlace,
+      description: editDescription,
+      priority: editPriority,
+      dateTime: editDatetime
+    });
+    setEditing(false);
+    toast({ title: "Обновлено", description: "Данные задачи сохранены" });
   };
 
   const canEdit = userData && (
     userData.role === 'owner' || 
-    (userData.role === 'head' && userData.department === task?.department) ||
-    (userData.role === 'inspector' && (task?.createdByUid === userData.uid || task?.responsibleUid === userData.uid))
+    (userData.role === 'head' && userData.departmentId === task?.departmentId) ||
+    (userData.role === 'inspector' && task?.responsibleUserId === userData.id)
   );
 
   const canRestore = userData?.role === 'owner' && task?.status === 'завершено';
@@ -176,8 +160,8 @@ export default function TaskDetail() {
 
               {editing && (
                 <div className="flex gap-4 pt-6">
-                  <Button className="flex-1" onClick={handleSaveEdit} disabled={saving}>
-                    {saving ? "Сохранение..." : <><Save className="w-4 h-4 mr-2" /> Сохранить</>}
+                  <Button className="flex-1" onClick={handleSaveEdit}>
+                    <Save className="w-4 h-4 mr-2" /> Сохранить
                   </Button>
                   <Button variant="outline" onClick={() => setEditing(false)}>Отмена</Button>
                 </div>
@@ -198,7 +182,7 @@ export default function TaskDetail() {
                     {editing ? (
                       <Input type="datetime-local" value={editDatetime} onChange={(e) => setEditDatetime(e.target.value)} className="mt-1 h-8 text-xs" />
                     ) : (
-                      <span className="text-sm font-medium">{new Date(task.datetime).toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' })}</span>
+                      <span className="text-sm font-medium">{task.dateTime ? new Date(task.dateTime).toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' }) : '—'}</span>
                     )}
                   </div>
                 </div>
@@ -217,7 +201,7 @@ export default function TaskDetail() {
                   <User className="w-5 h-5 text-primary shrink-0" />
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground">Ответственный</span>
-                    <span className="text-sm font-medium">{task.responsibleName}</span>
+                    <span className="text-sm font-medium">{task.responsibleUserId || '—'}</span>
                   </div>
                 </div>
                 {!editing && (
@@ -250,7 +234,7 @@ export default function TaskDetail() {
             </Card>
 
             <div className="p-4 bg-white rounded-xl shadow-sm border text-[10px] uppercase font-bold text-muted-foreground text-center">
-              Отдел: {task.department}
+              Отдел: {task.departmentId}
             </div>
           </div>
         </div>

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/router';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { DEPARTMENTS, PRIORITIES, Priority, Department } from '@/lib/constants';
+import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { PRIORITIES, Priority } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,11 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
 import { suggestChecklist } from '@/ai/flows/ai-checklist-suggestion-flow';
 
 export default function NewTask() {
   const { userData } = useAuth();
+  const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -25,27 +26,17 @@ export default function NewTask() {
   const [datetime, setDatetime] = useState('');
   const [place, setPlace] = useState('');
   const [priority, setPriority] = useState<Priority>('средний');
-  const [department, setDepartment] = useState<Department | ''>('');
-  const [responsibleUid, setResponsibleUid] = useState('');
+  const [responsibleUserId, setResponsibleUserId] = useState('');
   const [checklist, setChecklist] = useState<{ text: string; done: boolean }[]>([]);
   const [newCheckItem, setNewCheckItem] = useState('');
-  
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
-  useEffect(() => {
-    if (userData) {
-      setDepartment(userData.department);
-      fetchDepartmentUsers(userData.department);
-    }
-  }, [userData]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!db || !userData) return null;
+    return query(collection(db, 'userProfiles'), where('departmentId', '==', userData.departmentId));
+  }, [db, userData]);
 
-  const fetchDepartmentUsers = async (dept: string) => {
-    const q = query(collection(db, 'users'), where('department', '==', dept));
-    const snapshot = await getDocs(q);
-    setUsers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
-  };
+  const { data: users } = useCollection(usersQuery);
 
   const handleAddCheckItem = () => {
     if (newCheckItem.trim()) {
@@ -77,34 +68,23 @@ export default function NewTask() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!department || !responsibleUid) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Заполните все поля" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const respUser = users.find(u => u.uid === responsibleUid);
-      await addDoc(collection(db, 'tasks'), {
-        title,
-        description,
-        datetime,
-        place,
-        priority,
-        status: 'запланировано',
-        department,
-        responsibleUid,
-        responsibleName: respUser?.name || '',
-        checklist,
-        createdByUid: userData?.uid,
-        createdAt: new Date().toISOString()
-      });
-      toast({ title: "Успех", description: "Задача создана" });
-      router.push('/');
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Ошибка", description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    if (!db || !userData) return;
+    
+    addDocumentNonBlocking(collection(db, 'tasks'), {
+      title,
+      description,
+      dateTime: datetime,
+      place,
+      priority,
+      status: 'запланировано',
+      departmentId: userData.departmentId,
+      responsibleUserId,
+      checklist,
+      createdAt: new Date().toISOString()
+    });
+    
+    toast({ title: "Успех", description: "Задача создана" });
+    router.push('/');
   };
 
   return (
@@ -141,10 +121,10 @@ export default function NewTask() {
 
                 <div className="space-y-2">
                   <Label htmlFor="responsible">Ответственный</Label>
-                  <Select value={responsibleUid} onValueChange={setResponsibleUid}>
+                  <Select value={responsibleUserId} onValueChange={setResponsibleUserId}>
                     <SelectTrigger><SelectValue placeholder="Выберите ответственного" /></SelectTrigger>
                     <SelectContent>
-                      {users.map(u => <SelectItem key={u.uid} value={u.uid}>{u.name}</SelectItem>)}
+                      {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -194,8 +174,8 @@ export default function NewTask() {
               </div>
 
               <div className="pt-4 flex gap-4">
-                <Button type="submit" className="flex-1 h-11" disabled={loading}>
-                  {loading ? "Создание..." : "Создать задачу"}
+                <Button type="submit" className="flex-1 h-11">
+                  Создать задачу
                 </Button>
                 <Button type="button" variant="outline" className="h-11 px-8" onClick={() => router.back()}>Отмена</Button>
               </div>

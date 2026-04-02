@@ -1,53 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { TaskCard } from '@/components/TaskCard';
-import { ALL_ACCESS_DEPARTMENTS, DEPARTMENTS } from '@/lib/constants';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 export default function Dashboard() {
   const { userData } = useAuth();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const db = useFirestore();
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    if (!userData) return;
-
-    let q;
+  const tasksQuery = useMemoFirebase(() => {
+    if (!db || !userData) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Rule: Owner, Media Center, Tech Center see all tasks
-    const hasFullAccess = userData.role === 'owner' || ALL_ACCESS_DEPARTMENTS.includes(userData.department);
+    // Owner, Media Center, Tech Center see all tasks
+    const hasFullAccess = userData.role === 'owner' || 
+                         userData.departmentId === 'media-center' || 
+                         userData.departmentId === 'technical-service-center';
     
     if (hasFullAccess) {
-      q = query(tasksRef, orderBy('createdAt', 'desc'));
+      return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
-      q = query(tasksRef, where('department', '==', userData.department), orderBy('createdAt', 'desc'));
+      return query(tasksRef, where('departmentId', '==', userData.departmentId), orderBy('createdAt', 'desc'));
     }
+  }, [db, userData]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let filteredTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Hide completed tasks from non-owners
-      if (userData.role !== 'owner') {
-        filteredTasks = filteredTasks.filter((t: any) => t.status !== 'завершено');
-      }
+  const { data: rawTasks, isLoading } = useCollection(tasksQuery);
 
-      setTasks(filteredTasks);
-      setLoading(false);
-    }, (error) => {
-      console.error("Firestore error:", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [userData]);
+  const tasks = useMemo(() => {
+    if (!rawTasks) return [];
+    let filtered = rawTasks;
+    // Hide completed tasks from non-owners
+    if (userData?.role !== 'owner') {
+      filtered = filtered.filter((t: any) => t.status !== 'завершено');
+    }
+    return filtered;
+  }, [rawTasks, userData]);
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -55,7 +47,7 @@ export default function Dashboard() {
   );
 
   return (
-    <Layout title="Мои Задачи">
+    <Layout title="Задачи CRMI">
       <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-start md:items-center">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -72,7 +64,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
             <Skeleton key={i} className="h-48 w-full rounded-xl" />
@@ -81,7 +73,7 @@ export default function Dashboard() {
       ) : filteredTasks.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTasks.map(task => (
-            <TaskCard key={task.id} {...task} />
+            <TaskCard key={task.id} {...task} datetime={task.dateTime} />
           ))}
         </div>
       ) : (

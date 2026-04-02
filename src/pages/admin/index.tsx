@@ -1,54 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { collection, query, onSnapshot, doc, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
+import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
+import { ROLES, Role, ROLE_LABELS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/router';
 
 export default function AdminPage() {
   const { userData } = useAuth();
-  const router = useRouter();
+  const db = useFirestore();
   const { toast } = useToast();
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!userData) return;
-    if (userData.role !== 'owner' && userData.role !== 'head') {
-      router.push('/');
-      return;
-    }
-
-    let q;
-    const usersRef = collection(db, 'users');
+  const usersQuery = useMemoFirebase(() => {
+    if (!db || !userData) return null;
+    const usersRef = collection(db, 'userProfiles');
     
     if (userData.role === 'owner') {
-      q = query(usersRef);
+      return query(usersRef);
     } else {
-      q = query(usersRef, where('department', '==', userData.department));
+      return query(usersRef, where('departmentId', '==', userData.departmentId));
     }
+  }, [db, userData]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
-    });
+  const { data: users, isLoading } = useCollection(usersQuery);
 
-    return () => unsubscribe();
-  }, [userData]);
-
-  const handleRoleChange = async (uid: string, newRole: Role) => {
-    try {
-      await updateDoc(doc(db, 'users', uid), { role: newRole });
-      toast({ title: "Роль обновлена", description: "Права пользователя изменены" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Не удалось обновить роль" });
-    }
+  const handleRoleChange = (uid: string, newRole: Role) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { role: newRole });
+    toast({ title: "Роль обновлена", description: "Права пользователя изменены" });
   };
 
   const getAvailableRoles = (currentUserRole: string) => {
@@ -56,11 +39,13 @@ export default function AdminPage() {
     return ["inspector", "reader"] as const;
   };
 
+  if (isLoading) return <Layout><div className="flex justify-center py-20">Загрузка...</div></Layout>;
+
   return (
     <Layout title="Управление пользователями">
       <Card className="border-none shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Сотрудники ({userData?.department || 'Все отделы'})</CardTitle>
+          <CardTitle className="text-lg">Сотрудники ({userData?.departmentId || 'Все отделы'})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -75,12 +60,12 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.uid}>
+                {users?.map((user) => (
+                  <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[10px]">{user.department}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{user.departmentId}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-bold">
@@ -93,7 +78,7 @@ export default function AdminPage() {
                       ) : (
                         <Select 
                           value={user.role} 
-                          onValueChange={(v) => handleRoleChange(user.uid, v as Role)}
+                          onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
                           <SelectTrigger className="h-8 w-[180px] text-xs">
