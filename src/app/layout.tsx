@@ -5,6 +5,7 @@ import './globals.css';
 import { AuthProvider } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
@@ -14,14 +15,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body className={inter.className}>
-        <FirebaseClientProvider>
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </FirebaseClientProvider>
+        <ThemeProvider>
+          <FirebaseClientProvider>
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </FirebaseClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
