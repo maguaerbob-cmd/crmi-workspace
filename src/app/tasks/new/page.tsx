@@ -14,8 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { X, Sparkles, Loader2 } from 'lucide-react';
-import { suggestChecklist } from '@/ai/flows/ai-checklist-suggestion-flow';
+import { X } from 'lucide-react';
 
 export default function NewTask() {
   const { userData } = useAuth();
@@ -31,7 +30,6 @@ export default function NewTask() {
   const [responsibleUserId, setResponsibleUserId] = useState('');
   const [checklist, setChecklist] = useState<{ text: string; done: boolean }[]>([]);
   const [newCheckItem, setNewCheckItem] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
@@ -49,24 +47,6 @@ export default function NewTask() {
 
   const handleRemoveCheckItem = (index: number) => {
     setChecklist(checklist.filter((_, i) => i !== index));
-  };
-
-  const handleSuggestChecklist = async () => {
-    if (!title || !description) {
-      toast({ variant: "destructive", title: "Заполните данные", description: "Название и описание нужны для работы ИИ" });
-      return;
-    }
-    setAiLoading(true);
-    try {
-      // Это вызов Server Action, теперь он не вызывает ошибку async_hooks в браузере
-      const result = await suggestChecklist({ title, description });
-      setChecklist(result.checklist);
-      toast({ title: "Чек-лист сгенерирован", description: "ИИ подготовил список дел для этой задачи" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Ошибка ИИ", description: "Не удалось получить подсказку" });
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,17 +120,6 @@ export default function NewTask() {
                 <div className="space-y-4 md:col-span-2">
                   <div className="flex justify-between items-center">
                     <Label>Чек-лист (план действий)</Label>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs h-8 border-primary text-primary"
-                      onClick={handleSuggestChecklist}
-                      disabled={aiLoading}
-                    >
-                      {aiLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                      Подсказать через ИИ
-                    </Button>
                   </div>
                   
                   <div className="flex gap-2">
