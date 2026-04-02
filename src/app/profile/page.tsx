@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuth as useFirebaseCore, updateDocumentNonBlocking, useFirestore } from '@/firebase';
@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut, Building, ShieldCheck, Mail, Calendar, Edit2, Check, X, Camera } from 'lucide-react';
+import { LogOut, Building, ShieldCheck, Mail, Calendar, Edit2, Check, X, Camera, Loader2 } from 'lucide-react';
 import { DEPARTMENTS, ROLE_LABELS, Role } from '@/lib/constants';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -26,10 +26,12 @@ export default function ProfilePage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
 
@@ -58,6 +60,41 @@ export default function ProfilePage() {
     });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) { // Лимит 1MB для Firestore Base64
+      toast({
+        variant: "destructive",
+        title: "ФАЙЛ СЛИШКОМ БОЛЬШОЙ",
+        description: "Пожалуйста, выберите изображение размером менее 1 МБ."
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setEditPhotoURL(base64String);
+      setIsUploading(false);
+      toast({
+        title: "ФОТО ВЫБРАНО",
+        description: "Нажмите 'Сохранить', чтобы применить изменения."
+      });
+    };
+    reader.onerror = () => {
+      setIsUploading(false);
+      toast({
+        variant: "destructive",
+        title: "ОШИБКА ЧТЕНИЯ",
+        description: "Не удалось прочитать файл."
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const currentDepartment = DEPARTMENTS.find(d => d.id === userData?.departmentId);
 
   return (
@@ -80,18 +117,31 @@ export default function ProfilePage() {
           
           <CardContent className="pt-8 px-6 pb-8">
             <div className="flex flex-col items-center mb-8 relative">
-              <div className="relative">
-                <Avatar className="h-24 w-24 mb-4 shadow-sm border-4 border-background">
-                  <AvatarImage src={userData?.photoURL} className="object-cover" />
+              <div className="relative group">
+                <Avatar className="h-24 w-24 mb-4 shadow-sm border-4 border-background overflow-hidden">
+                  <AvatarImage src={isEditing ? editPhotoURL : userData?.photoURL} className="object-cover" />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-black uppercase">
                     {userData?.name?.substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
+                
                 {isEditing && (
-                  <div className="absolute bottom-4 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
-                    <Camera className="w-4 h-4" />
-                  </div>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full transition-opacity opacity-0 group-hover:opacity-100"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
+                  </button>
                 )}
+                
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleFileChange}
+                />
               </div>
               
               {!isEditing ? (
@@ -118,22 +168,26 @@ export default function ProfilePage() {
                       className="h-10 text-sm font-bold rounded-xl"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ссылка на фото (Avatar URL)</Label>
-                    <Input 
-                      placeholder="https://example.com/photo.jpg" 
-                      value={editPhotoURL} 
-                      onChange={(e) => setEditPhotoURL(e.target.value)}
-                      className="h-10 text-sm font-bold rounded-xl"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest" onClick={handleSave}>
-                      <Check className="w-3 h-3 mr-1" /> Сохранить
+                  
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="h-10 rounded-xl text-[9px] font-black uppercase tracking-widest border-2" 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      <Camera className="w-3 h-3 mr-2" /> 
+                      {editPhotoURL ? "Изменить фото" : "Загрузить из галереи"}
                     </Button>
-                    <Button variant="outline" className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest border-2" onClick={() => setIsEditing(false)}>
-                      <X className="w-3 h-3 mr-1" /> Отмена
-                    </Button>
+                    
+                    <div className="flex gap-2">
+                      <Button className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest" onClick={handleSave}>
+                        <Check className="w-3 h-3 mr-1" /> Сохранить
+                      </Button>
+                      <Button variant="outline" className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest border-2" onClick={() => setIsEditing(false)}>
+                        <X className="w-3 h-3 mr-1" /> Отмена
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
