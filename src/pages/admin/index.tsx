@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { ROLES, Role, ROLE_LABELS } from '@/lib/constants';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { Shield, Mail, Building2, UserCog } from 'lucide-react';
 
 export default function AdminPage() {
   const { userData } = useAuth();
@@ -31,7 +32,10 @@ export default function AdminPage() {
   const handleRoleChange = (uid: string, newRole: Role) => {
     if (!db) return;
     updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { role: newRole });
-    toast({ title: "Роль обновлена", description: "Права пользователя изменены" });
+    toast({ 
+      title: "Роль обновлена", 
+      description: "Права доступа пользователя были успешно изменены." 
+    });
   };
 
   const getAvailableRoles = (currentUserRole: string) => {
@@ -39,66 +43,97 @@ export default function AdminPage() {
     return ["inspector", "reader"] as const;
   };
 
-  if (isLoading) return <Layout><div className="flex justify-center py-20">Загрузка...</div></Layout>;
+  const getDeptLabel = (id: string) => DEPARTMENTS.find(d => d.id === id)?.label || id;
+
+  if (isLoading) return (
+    <Layout title="Управление">
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground font-medium">Загрузка списка сотрудников...</p>
+      </div>
+    </Layout>
+  );
 
   return (
-    <Layout title="Управление пользователями">
-      <Card className="border-none shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Сотрудники ({userData?.departmentId || 'Все отделы'})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Имя</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Отдел</TableHead>
-                  <TableHead>Текущая роль</TableHead>
-                  <TableHead>Изменить роль</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px]">{user.departmentId}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-bold">
+    <Layout title="Управление доступом">
+      <div className="space-y-6">
+        <Card className="border-none shadow-sm overflow-hidden">
+          <CardHeader className="bg-primary/5 pb-4">
+            <div className="flex items-center gap-2">
+              <UserCog className="w-5 h-5 text-primary" />
+              <CardTitle className="text-lg">Сотрудники</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Управление отделом: ${getDeptLabel(userData?.departmentId || '')}`}
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {users?.map((user) => (
+                <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-10 h-10 border-2 border-white shadow-sm shrink-0">
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                        {user.name?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex flex-col space-y-1">
+                      <h3 className="text-sm font-bold text-foreground leading-none">{user.name}</h3>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Mail className="w-3 h-3" />
+                        <span>{user.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Building2 className="w-3 h-3 text-primary/60" />
+                        <span>{getDeptLabel(user.departmentId)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 sm:gap-4">
+                    <div className="hidden xs:block">
+                      <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-tight bg-white">
                         {ROLE_LABELS[user.role as Role]}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.role === 'owner' ? (
-                        <span className="text-xs text-muted-foreground italic">Владелец (неизменяемо)</span>
-                      ) : (
-                        <Select 
-                          value={user.role} 
-                          onValueChange={(v) => handleRoleChange(user.id, v as Role)}
-                          disabled={userData?.role !== 'owner' && user.role === 'head'}
-                        >
-                          <SelectTrigger className="h-8 w-[180px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getAvailableRoles(userData?.role || '').map(role => (
-                              <SelectItem key={role} value={role}>{ROLE_LABELS[role as Role]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                    </div>
+
+                    {user.role === 'owner' ? (
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-primary px-3 py-1.5 bg-primary/5 rounded-lg border border-primary/20">
+                        <Shield className="w-3 h-3" />
+                        OWNER
+                      </div>
+                    ) : (
+                      <Select 
+                        value={user.role} 
+                        onValueChange={(v) => handleRoleChange(user.id, v as Role)}
+                        disabled={userData?.role !== 'owner' && user.role === 'head'}
+                      >
+                        <SelectTrigger className="h-9 w-[160px] text-xs shadow-sm bg-white border-none focus:ring-1 focus:ring-primary/20">
+                          <SelectValue placeholder="Сменить роль" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableRoles(userData?.role || '').map(role => (
+                            <SelectItem key={role} value={role} className="text-xs">
+                              {ROLE_LABELS[role as Role]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {users?.length === 0 && (
+                <div className="py-12 text-center text-muted-foreground text-sm italic">
+                  Сотрудники не найдены
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Layout>
   );
 }
