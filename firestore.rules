@@ -13,17 +13,7 @@ service cloud.firestore {
      * - /departments: Predefined organizational categories (Read-only for most).
      * - /userProfiles: User metadata, roles, and department IDs (Ownership-based).
      * - /tasks: Global task pool secured via departmental scoping and role-based access.
-     * 
-     * Key Security Decisions:
-     * 1. Authorization Independence: Tasks store denormalized 'departmentId' and 'creatorUserId' 
-     *    to allow atomic, performant security checks without cross-document lookups.
-     * 2. Profile-Based Context: A single 'get()' call is permitted to fetch the current 
-     *    authenticated user's profile to retrieve their 'role' and 'departmentId'.
-     * 3. Prototyping Flexibility: Rules strictly enforce 'who' can access data based on 
-     *    relational fields (UIDs and IDs), but do not enforce strict schema types for 
-     *    general content fields (like task descriptions or checklist arrays).
-     * 4. Structural Segregation: Administrative roles (Owner, Technical Service, Media) 
-     *    bypass departmental filters, while standard users are restricted to their own department's data.
+     * - /settings: Global app configuration (e.g. logoURL).
      */
 
     // --- Helper Functions ---
@@ -59,10 +49,6 @@ service cloud.firestore {
 
     /**
      * @description Rules for organizational departments. Generally static and read-only.
-     * @path /departments/{departmentId}
-     * @allow (get, list) Any authenticated user.
-     * @deny (create, update, delete) Non-admin users.
-     * @principle Public read for lookup data, restricted writes for system management.
      */
     match /departments/{departmentId} {
       allow get, list: if isSignedIn();
@@ -71,12 +57,6 @@ service cloud.firestore {
 
     /**
      * @description Rules for user profiles, managing roles and departmental assignments.
-     * @path /userProfiles/{userId}
-     * @allow (get) Any signed-in user (for context fetching).
-     * @allow (create) User creating their own profile.
-     * @allow (update) The owner of the profile or a Global Admin.
-     * @deny (list) Standard users to prevent user harvesting.
-     * @principle Self-ownership for profile data with admin overrides for role management.
      */
     match /userProfiles/{userId} {
       allow get: if isSignedIn();
@@ -87,29 +67,28 @@ service cloud.firestore {
     }
 
     /**
+     * @description Rules for global application settings (e.g., branding).
+     * @path /settings/{settingId}
+     * @allow (get) Publicly accessible so that the logo can be shown on the login/register pages.
+     * @allow (update) Restricted to Global Admins (Owner).
+     */
+    match /settings/{settingId} {
+      allow get: if true;
+      allow list: if isSignedIn();
+      allow update: if isGlobalAdmin();
+      allow create, delete: if isGlobalAdmin();
+    }
+
+    /**
      * @description Rules for Tasks, the core operational entity.
-     * @path /tasks/{taskId}
-     * @allow (get, list) Global Admins OR users within the task's assigned department.
-     * @allow (create) Any signed-in user, provided they link the task to their UID.
-     * @allow (update) Global Admins OR task creators/department members.
-     * @deny (delete) Anyone who isn't the creator or a Global Admin.
-     * @principle Authorization Independence using denormalized 'departmentId' and 'creatorUserId'.
      */
     match /tasks/{taskId} {
-      
-      /**
-       * Note: 'list' operations on /tasks MUST include a filter for 'departmentId' 
-       * for non-admin users to satisfy the rule condition.
-       */
       allow get, list: if isGlobalAdmin() || (isSignedIn() && currentUserData().departmentId == resource.data.departmentId);
-      
       allow create: if isSignedIn() && request.resource.data.creatorUserId == request.auth.uid;
-      
       allow update: if resource != null && (
         isGlobalAdmin() || 
         (currentUserData().departmentId == resource.data.departmentId && request.resource.data.creatorUserId == resource.data.creatorUserId)
       );
-      
       allow delete: if resource != null && (
         isGlobalAdmin() || 
         resource.data.creatorUserId == request.auth.uid
@@ -117,13 +96,3 @@ service cloud.firestore {
     }
   }
 }
-
-/**
- * FINAL REVIEW AND AUDIT:
- * 1. Ownership Enforced: Yes, via 'isOwner' and 'creatorUserId' checks.
- * 2. Role-Based Access: Yes, Global Admins (Owner, TSC, Media) have broad access.
- * 3. Departmental Scoping: Yes, standard users are limited by 'currentUserData().departmentId'.
- * 4. Write Safety: No 'if true' rules used for writes. Existence checks (resource != null) included.
- * 5. Flexible Schema: Data types and specific object shapes are NOT validated, allowing for rapid iteration.
- * 6. Relational Integrity: 'creatorUserId' and 'userId' path consistency is enforced.
- */

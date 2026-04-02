@@ -12,10 +12,7 @@
         },
         "name": {
           "type": "string",
-          "description": "The official name of the department.",
-          "items": {
-            "type": "string"
-          }
+          "description": "The official name of the department."
         }
       },
       "required": [
@@ -27,11 +24,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Stores information about a user, including their name, email, assigned role, and department. This data works in conjunction with an external authentication system.",
+      "description": "Stores information about a user, including their name, email, assigned role, and department.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the UserProfile entity. This typically corresponds to the user's ID from the authentication system."
+          "description": "Unique identifier for the UserProfile entity (Firebase UID)."
         },
         "name": {
           "type": "string",
@@ -44,14 +41,15 @@
         },
         "role": {
           "type": "string",
-          "description": "The user's assigned role within the system, determining their access and permissions.",
-          "items": {
-            "type": "string"
-          }
+          "description": "The user's assigned role (owner, director, deputy_director, head, inspector, reader)."
         },
         "departmentId": {
           "type": "string",
-          "description": "Reference to the department the user belongs to. (Relationship: Department 1:N UserProfile)"
+          "description": "Reference to the department the user belongs to."
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Whether the user's account has been approved by an administrator."
         }
       },
       "required": [
@@ -66,77 +64,86 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a single task, event, or outing, containing all relevant details, status, and associated departmental and user information.",
+      "description": "Represents a single task, event, or outing.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Task entity."
+          "description": "Unique identifier for the Task."
         },
         "title": {
           "type": "string",
-          "description": "A concise title or name for the task."
+          "description": "Title of the task."
         },
-        "datetime": {
+        "dateTime": {
           "type": "string",
-          "description": "The scheduled date and time for the task to occur.",
+          "description": "Scheduled date and time.",
           "format": "date-time"
         },
         "place": {
           "type": "string",
-          "description": "The physical location or venue where the task will take place."
+          "description": "Location of the task."
         },
         "description": {
           "type": "string",
-          "description": "A detailed description or narrative explaining the task."
+          "description": "Detailed description."
         },
         "checklist": {
           "type": "array",
-          "description": "A list of individual checklist item texts for the task. Note: The 'done' status for each item is not stored directly in this model due to schema constraints.",
+          "description": "List of checklist items with status.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "done": { "type": "boolean" }
+            }
           }
         },
         "priority": {
           "type": "string",
-          "description": "The priority level of the task, influencing its visibility or urgency.",
-          "items": {
-            "type": "string"
-          }
+          "description": "Priority level (срочно, не срочно)."
         },
         "status": {
           "type": "string",
-          "description": "The current operational status of the task.",
-          "items": {
-            "type": "string"
-          }
+          "description": "Current status (запланировано, в процессе, завершено)."
         },
         "departmentId": {
           "type": "string",
-          "description": "Reference to the department to which this task belongs. (Relationship: Department 1:N Task)"
+          "description": "Department assigned to this task."
         },
         "responsibleUserId": {
           "type": "string",
-          "description": "Reference to the UserProfile of the individual designated as responsible for this task. (Relationship: UserProfile 1:N Task)"
+          "description": "UID of the user responsible for the task."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the task creator."
         },
         "createdAt": {
           "type": "string",
-          "description": "The timestamp indicating when the task was initially created.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
         "title",
-        "datetime",
+        "dateTime",
         "place",
-        "description",
-        "checklist",
-        "priority",
         "status",
         "departmentId",
-        "responsibleUserId",
-        "createdAt"
+        "createdBy"
       ]
+    },
+    "AppSetting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AppSetting",
+      "type": "object",
+      "description": "Global application settings such as branding and configuration.",
+      "properties": {
+        "logoURL": {
+          "type": "string",
+          "description": "Base64 encoded logo image or URL for branding."
+        }
+      }
     }
   },
   "auth": {
@@ -154,12 +161,9 @@
           "schema": {
             "$ref": "#/backend/entities/Department"
           },
-          "description": "Stores predefined organizational departments. This is a static collection primarily for lookup and associating users and tasks. It is generally read-only for authenticated users, with write access restricted to system owners for setup and management.",
+          "description": "Stores predefined organizational departments.",
           "params": [
-            {
-              "name": "departmentId",
-              "description": "Unique identifier for a specific department."
-            }
+            { "name": "departmentId", "description": "Unique identifier for a department." }
           ]
         }
       },
@@ -170,12 +174,9 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Contains user-specific profile information, including their assigned role and department. The 'role' and 'departmentId' fields are critical for database-backed access control (DBAC) decisions across the application. Users can read/write their own profile, Owners can manage all profiles, and Department Heads can assign 'inspector'/'reader' roles to users within their department.",
+          "description": "User profiles including roles and approval status.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The unique Firebase Authentication UID of the user."
-            }
+            { "name": "userId", "description": "Firebase UID." }
           ]
         }
       },
@@ -186,16 +187,26 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "A top-level collection storing all tasks, events, or outings. Each document includes denormalized 'departmentId', 'responsibleUserId', and 'creatorUserId' fields to ensure Authorization Independence for efficient and secure access control checks. The 'checklist' field is modified to be an array of objects `{text: string, done: boolean}` to track completion status of individual items.",
+          "description": "A collection storing all tasks and outings.",
           "params": [
-            {
-              "name": "taskId",
-              "description": "Unique identifier for a specific task."
-            }
+            { "name": "taskId", "description": "Unique identifier for a task." }
+          ]
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "AppSetting",
+          "schema": {
+            "$ref": "#/backend/entities/AppSetting"
+          },
+          "description": "Global application settings (e.g. 'app' document for logo). Publicly readable.",
+          "params": [
+            { "name": "settingId", "description": "Unique identifier (e.g., 'app')." }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure for CRMI TaskFlow prioritizes a secure, scalable, and debuggable design following the core principles outlined. \n\n**Authorization Independence (CRITICAL):**\n\n1.  **User Profile Denormalization (Indirect):** Instead of denormalizing user roles and departments into every document, `UserProfile` documents (`/userProfiles/{userId}`) centrally store `role` and `departmentId`. Firestore Security Rules will use a `get(/userProfiles/$(request.auth.uid))` call to retrieve the current user's profile information. This is an acceptable exception to the `get()` avoidance principle, as it fetches the *current user's own authorization context*, not context from other data entities. This prevents complex, multi-hop `get()` calls that would break atomic operations or create debugging nightmares.\n2.  **Task Authorization Denormalization:** Each `Task` document (`/tasks/{taskId}`) includes crucial authorization fields: `departmentId`, `responsibleUserId`, and `creatorUserId`. This ensures that security rules evaluating access for a specific task can directly reference `resource.data.departmentId`, `resource.data.responsibleUserId`, and `resource.data.creatorUserId` without needing any additional `get()` operations on other `Task` documents or their 'parents'. This makes task-specific authorization atomic and highly performant.\n\n**QAPs (Rules are not Filters) and Structural Segregation:**\n\n1.  **Single `tasks` Collection:** All tasks are stored in a top-level collection `/tasks`. This is crucial for satisfying the 'Technical Service Center', 'Media Center', and 'Owner' roles' requirement to view *all* tasks. If tasks were segregated into subcollections (e.g., `/departments/{departmentId}/tasks`), these global access roles would necessitate inefficient collection group queries or multiple queries, violating QAPs.\n2.  **Explicit Rule Enforcement for `list` operations:**\n    *   For standard users (Department Head, Inspector, Reader), security rules will require that any `list` query on `/tasks` *must* include a `where('departmentId', '==', currentUserDepartmentId)` clause. If a user attempts to query without this filter, the rules will deny access to any documents not belonging to their department. This adheres to QAPs because the rule doesn't implicitly filter the data returned; it explicitly grants or denies access to individual documents based on the query's criteria and the user's role.\n    *   For special roles (Owner, Technical Service Center, Media Center), the rules will allow `list` queries on `/tasks` *without* a `departmentId` filter, as their role grants them universal read access. This structural segregation of access logic (different access based on role) is handled efficiently within a single collection.\n3.  **Dedicated `departments` Collection:** A top-level `/departments` collection stores predefined department names. This collection is primarily read-only for most users, further simplifying its security posture.\n4.  **Dedicated `userProfiles` Collection:** A top-level `/userProfiles` collection stores all user-related metadata. This path-based ownership ensures a homogeneous security posture where users generally own their profiles, with specific override permissions for Owners and Department Heads for role management.\n\n**DBAC and Role Management:**\n\n*   User roles (`owner`, `department_head`, `inspector`, `reader`) are stored directly in each user's `UserProfile` document, ensuring all authorization decisions are database-backed and rely solely on `request.auth.uid` for lookup. This avoids the use of custom claims, as mandated.\n\n**Invariants and Predictability:**\n\n*   `creatorUserId`, `responsibleUserId`, `departmentId`, and `status` fields within `Task` documents make ownership, responsibility, and state explicit, simplifying rule writing and data integrity checks.\n*   The `checklist` field in `Task` is structured as an array of objects (`{text: string, done: boolean}`) to explicitly model the state of each checklist item, ensuring predictable schema and direct rule application for updates."
+    "reasoning": "The Firestore structure now includes a 'settings' collection to allow global branding data (like a logo) to be fetched by unauthenticated users during the login process, while restricting write access to global administrators (Owner)."
   }
 }
