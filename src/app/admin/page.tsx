@@ -6,13 +6,13 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
+import { Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Building2, UserCog, Trash2, Check, X } from 'lucide-react';
+import { Shield, Mail, Building2, UserCog, Trash2, Check, X, Briefcase } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,23 +24,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminPage() {
   const { userData } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
 
-  const isGlobalManager = userData?.role === 'owner' || userData?.role === 'director' || userData?.role === 'deputy_director';
+  const isOwner = userData?.role === 'owner';
+  const isGlobalManager = isOwner || userData?.role === 'director' || userData?.role === 'deputy_director';
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
     const usersRef = collection(db, 'userProfiles');
     
-    // Владелец, Директор и Зам. директора видят всех
     if (isGlobalManager) {
       return query(usersRef);
     } else {
-      // Остальные (например, Руководитель) видят только свой отдел
       return query(usersRef, where('departmentId', '==', userData.departmentId));
     }
   }, [db, userData, isGlobalManager]);
@@ -48,7 +48,7 @@ export default function AdminPage() {
   const { data: users, isLoading } = useCollection(usersQuery);
 
   const handleRoleChange = (uid: string, newRole: Role) => {
-    if (!db) return;
+    if (!db || !isOwner) return;
     updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { role: newRole });
     toast({ 
       title: "РОЛЬ ОБНОВЛЕНА", 
@@ -57,7 +57,7 @@ export default function AdminPage() {
   };
 
   const handleDepartmentChange = (uid: string, newDeptId: string) => {
-    if (!db) return;
+    if (!db || !isOwner) return;
     updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { departmentId: newDeptId });
     toast({ 
       title: "ОТДЕЛ ОБНОВЛЕН", 
@@ -66,7 +66,7 @@ export default function AdminPage() {
   };
 
   const handleApproval = (uid: string, approve: boolean) => {
-    if (!db) return;
+    if (!db || !isOwner) return;
     if (approve) {
       updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { isApproved: true });
       toast({ title: "ДОСТУП ПРЕДОСТАВЛЕН", description: "СОТРУДНИК ТЕПЕРЬ МОЖЕТ РАБОТАТЬ В СИСТЕМЕ." });
@@ -77,20 +77,12 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = (uid: string) => {
-    if (!db) return;
+    if (!db || !isOwner) return;
     deleteDocumentNonBlocking(doc(db, 'userProfiles', uid));
     toast({ 
       title: "СОТРУДНИК УДАЛЕН", 
       description: "ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ БЫЛ ИСКЛЮЧЕН ИЗ СИСТЕМЫ." 
     });
-  };
-
-  const getAvailableRoles = (currentUserRole: string) => {
-    if (currentUserRole === 'owner') return ROLES;
-    if (currentUserRole === 'director' || currentUserRole === 'deputy_director') {
-      return ["director", "deputy_director", "head", "inspector", "reader"] as const;
-    }
-    return ["head", "inspector", "reader"] as const;
   };
 
   const getDeptLabel = (id: string) => DEPARTMENTS.find(d => d.id === id)?.label || id;
@@ -110,8 +102,8 @@ export default function AdminPage() {
   return (
     <Layout title="Управление персоналом">
       <div className="space-y-8 max-w-5xl mx-auto">
-        {/* Очередь на одобрение */}
-        {pendingUsers.length > 0 && (
+        {/* Очередь на одобрение - доступна только Владельцу */}
+        {isOwner && pendingUsers.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-l-4 border-yellow-500 pl-4">
               <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Заявки на регистрацию</h2>
@@ -181,7 +173,8 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 gap-3">
             {approvedUsers.map((user) => (
               <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
-                {(userData?.role === 'owner' || (isGlobalManager && user.role !== 'owner')) && userData?.id !== user.id && (
+                {/* Удаление доступно только Владельцу */}
+                {isOwner && userData?.id !== user.id && (
                   <div className="absolute top-3 right-3 z-10">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -238,52 +231,66 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
-                      {isGlobalManager && (
-                        <div className="flex-1 sm:flex-initial">
-                          <Select 
-                            value={user.departmentId} 
-                            onValueChange={(v) => handleDepartmentChange(user.id, v)}
-                            disabled={user.role === 'owner' || (userData?.role !== 'owner' && user.role === 'director')}
-                          >
-                            <SelectTrigger className="h-8 w-full sm:w-[120px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg focus:ring-primary/10">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-none shadow-2xl">
-                              {DEPARTMENTS.map(dept => (
-                                <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-wider">
-                                  {dept.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      {/* Смена отдела и роли доступна только Владельцу */}
+                      {isOwner ? (
+                        <>
+                          <div className="flex-1 sm:flex-initial">
+                            <Select 
+                              value={user.departmentId} 
+                              onValueChange={(v) => handleDepartmentChange(user.id, v)}
+                              disabled={user.role === 'owner'}
+                            >
+                              <SelectTrigger className="h-8 w-full sm:w-[120px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-none shadow-2xl">
+                                {DEPARTMENTS.map(dept => (
+                                  <SelectItem key={dept.id} value={dept.id} className="text-[9px] font-black uppercase tracking-wider">
+                                    {dept.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex-1 sm:flex-initial">
+                            {user.role === 'owner' ? (
+                              <div className="flex items-center justify-center gap-2 text-[9px] font-black text-background bg-foreground px-4 rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
+                                <Shield className="w-3 h-3" />
+                                OWNER
+                              </div>
+                            ) : (
+                              <Select 
+                                value={user.role} 
+                                onValueChange={(v) => handleRoleChange(user.id, v as Role)}
+                              >
+                                <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg">
+                                  <SelectValue placeholder="Роль" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-none shadow-2xl">
+                                  {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                                    <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-wider">
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        /* Отображение для Директоров и Зам. директоров (только текст) */
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                          <Badge variant="outline" className="h-7 text-[8px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground whitespace-nowrap">
+                            <Building2 className="w-2.5 h-2.5 mr-1.5 opacity-60" />
+                            {getDeptLabel(user.departmentId)}
+                          </Badge>
+                          <Badge variant="secondary" className="h-7 text-[8px] font-black uppercase tracking-widest bg-foreground text-background border-none whitespace-nowrap">
+                            <Briefcase className="w-2.5 h-2.5 mr-1.5 opacity-60" />
+                            {ROLE_LABELS[user.role as Role]}
+                          </Badge>
                         </div>
                       )}
-
-                      <div className="flex-1 sm:flex-initial">
-                        {user.role === 'owner' ? (
-                          <div className="flex items-center justify-center gap-2 text-[9px] font-black text-background bg-foreground px-4 rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
-                            <Shield className="w-3 h-3" />
-                            OWNER
-                          </div>
-                        ) : (
-                          <Select 
-                            value={user.role} 
-                            onValueChange={(v) => handleRoleChange(user.id, v as Role)}
-                            disabled={!isGlobalManager || (userData?.role !== 'owner' && user.role === 'director')}
-                          >
-                            <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-muted border-none rounded-lg focus:ring-primary/10">
-                              <SelectValue placeholder="Роль" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-none shadow-2xl">
-                              {getAvailableRoles(userData?.role || '').map(role => (
-                                <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-wider">
-                                  {ROLE_LABELS[role as Role]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </CardContent>
