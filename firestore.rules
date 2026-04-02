@@ -19,10 +19,6 @@ service cloud.firestore {
       return authData != null && authData.role == 'head';
     }
 
-    function isGlobalDept(authData) {
-      return authData != null && (authData.departmentId == 'media-center' || authData.departmentId == 'technical-service-center');
-    }
-
     // Коллекция пользователей
     match /userProfiles/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()) || (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId));
@@ -36,14 +32,10 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
-    // Коллекция задач
+    // Коллекция задач: теперь доступна для чтения всем авторизованным пользователям
     match /tasks/{taskId} {
-      // Чтение разрешено владельцам, спец-отделам и сотрудникам своего отдела (кроме завершенных для обычных ролей)
-      allow read: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        isGlobalDept(getAuthData()) || 
-        (getAuthData().departmentId == resource.data.departmentId && (resource.data.status != 'завершено' || isHead(getAuthData())))
-      );
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
 
       // Создание: владелец, руководитель или инспектор своего отдела
       allow create: if isSignedIn() && (
@@ -58,7 +50,7 @@ service cloud.firestore {
           resource.data.status != 'завершено' && (
             (isHead(getAuthData()) && getAuthData().departmentId == resource.data.departmentId) ||
             (getAuthData().role == 'inspector' && (request.auth.uid == resource.data.responsibleUserId || request.auth.uid == resource.id)) ||
-            (getAuthData().role == 'reader' && getAuthData().departmentId == resource.data.departmentId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+            (getAuthData().role == 'reader' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
           )
         )
       );

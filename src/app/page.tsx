@@ -4,12 +4,11 @@ import React, { useState, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Search, FolderKanban, Filter } from 'lucide-react';
-import { ALL_ACCESS_DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
   const { userData } = useAuth();
@@ -17,22 +16,11 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!db || !userData || !userData.departmentId) return null;
+    if (!db || !userData) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Владельцы и сотрудники спец-отделов видят все задачи
-    if (userData.role === 'owner' || ALL_ACCESS_DEPARTMENTS.includes(userData.departmentId)) {
-      return query(tasksRef, orderBy('createdAt', 'desc'));
-    } else {
-      // Остальные видят задачи своего отдела, исключая завершенные
-      // Правила Firestore требуют точного соответствия запроса правам доступа
-      return query(
-        tasksRef, 
-        where('departmentId', '==', userData.departmentId), 
-        where('status', 'in', ['запланировано', 'в процессе']),
-        orderBy('createdAt', 'desc')
-      );
-    }
+    // Теперь все видят все задачи, отсортированные по дате создания
+    return query(tasksRef, orderBy('createdAt', 'desc'));
   }, [db, userData]);
 
   const { data: tasks, isLoading } = useCollection(tasksQuery);
@@ -64,11 +52,11 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Filter className="w-3 h-3 text-slate-400" />
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                {search ? 'Результаты поиска' : 'Актуальный список'}
+                {search ? 'Результаты поиска' : 'Общий список задач'}
               </h2>
             </div>
             <div className="text-[10px] font-black text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-lg uppercase shadow-sm">
-              Найдено: {filteredTasks.length}
+              Всего: {filteredTasks.length}
             </div>
           </div>
         </div>
