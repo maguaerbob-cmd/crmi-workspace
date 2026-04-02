@@ -50,7 +50,12 @@
   @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
 }
 
-/* Strict professional inputs */
+/* Строгие профессиональные инпуты */
 input, textarea, select {
   @apply focus:ring-slate-900/5 !important;
+}
+
+/* Кастомные тени для "мужского" стиля */
+.shadow-strict {
+  box-shadow: 0 4px 0 0 rgba(15, 23, 42, 0.05);
 }

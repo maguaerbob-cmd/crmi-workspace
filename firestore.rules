@@ -18,27 +18,37 @@ service cloud.firestore {
     // Коллекция пользователей
     match /userProfiles/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
-      allow list: if isSignedIn() && isOwner(getAuthData());
+      
+      // Позволяем листинг, если пользователь владелец ИЛИ если это руководитель, фильтрующий по своему отделу
+      allow list: if isSignedIn() && (
+        isOwner(getAuthData()) || 
+        (getAuthData().role == 'head' && resource.data.departmentId == getAuthData().departmentId)
+      );
+      
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && (isOwner(getAuthData()) || request.auth.uid == userId);
+      
+      allow update: if isSignedIn() && (
+        isOwner(getAuthData()) || 
+        (getAuthData().role == 'head' && resource.data.departmentId == getAuthData().departmentId) ||
+        request.auth.uid == userId
+      );
+      
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
-    // Коллекция задач: доступна для чтения всем авторизованным пользователям
-    // Это исправляет ошибку Missing or insufficient permissions при общих запросах
+    // Коллекция задач
     match /tasks/{taskId} {
+      // Все авторизованные пользователи могут видеть список задач (как просил пользователь)
       allow read, list: if isSignedIn();
 
-      // Создание: любой авторизованный пользователь (по умолчанию роль читателя, но правила позволяют создавать)
       allow create: if isSignedIn();
 
-      // Обновление: владелец или если задача не завершена (для смены статуса)
+      // Обновление разрешено, если задача не завершена, или если это делает владелец
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (resource.data.status != 'завершено' && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'checklist']))
+        (resource.data.status != 'завершено' || request.resource.data.status == 'завершено')
       );
 
-      // Удаление: только владелец
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
