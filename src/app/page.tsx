@@ -22,12 +22,13 @@ export default function Dashboard() {
     if (!db || !userData) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Владелец видит всё без фильтров статуса
+    // Владелец видит всё без исключений
     if (userData.role === 'owner') {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Все остальные: видят все задачи организации, которые НЕ завершены
+    // Все остальные: видят все задачи, которые НЕ завершены
+    // Это соответствует правилу "скрывать завершенные от всех кроме владельца"
     return query(
       tasksRef, 
       where('status', '!=', 'завершено'),

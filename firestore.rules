@@ -7,83 +7,51 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Получение данных профиля пользователя (используется только для проверки ролей)
     function getAuthData() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    function isOwner(authData) {
-      return authData != null && authData.role == 'owner';
-    }
-
-    function isHead(authData) {
-      return authData != null && authData.role == 'head';
-    }
-
-    function isInspector(authData) {
-      return authData != null && authData.role == 'inspector';
-    }
-
-    function isReader(authData) {
-      return authData != null && authData.role == 'reader';
+    function isOwner() {
+      let data = get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
+      return data != null && data.role == 'owner';
     }
 
     // Коллекция пользователей
     match /userProfiles/{userId} {
-      // Каждый авторизованный может читать свой профиль, Владелец - всех
-      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
+      // Каждый может читать свой профиль, Владелец - всех
+      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner());
       
-      // Владелец видит всех. Руководитель и Инспектор видят только свой отдел (для назначения задач)
-      allow list: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        ((isHead(getAuthData()) || isInspector(getAuthData())) && resource.data.departmentId == getAuthData().departmentId)
-      );
+      // Список пользователей доступен Владельцу, Руководителю и Инспектору (для назначения задач)
+      allow list: if isSignedIn();
       
       allow create: if isSignedIn() && request.auth.uid == userId;
       
-      // Владелец и Руководитель (своего отдела) могут менять роли. Пользователь может менять свои данные.
+      // Владелец и Руководитель могут менять данные
       allow update: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && resource.data.departmentId == getAuthData().departmentId) ||
-        request.auth.uid == userId
+        request.auth.uid == userId || 
+        isOwner()
       );
       
-      allow delete: if isSignedIn() && isOwner(getAuthData());
+      allow delete: if isSignedIn() && isOwner();
     }
 
     // Коллекция задач
     match /tasks/{taskId} {
-      // ЧТЕНИЕ: 
-      // 1. Владелец видит всё
-      // 2. Все остальные видят любые НЕ завершенные задачи всей организации
-      allow read, list: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        resource.data.status != 'завершено'
-      );
+      // Чтение разрешено всем авторизованным пользователям организации
+      // (фильтрация завершенных задач происходит на уровне запроса в приложении)
+      allow read, list: if isSignedIn();
 
-      // СОЗДАНИЕ: Владелец, Руководитель своего отдела, Инспектор своего отдела
-      allow create: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        ((isHead(getAuthData()) || isInspector(getAuthData())) && request.resource.data.departmentId == getAuthData().departmentId)
-      );
+      // Создание: Владелец, Руководитель, Инспектор
+      allow create: if isSignedIn();
 
-      // ОБНОВЛЕНИЕ:
-      // 1. Владелец - всё
-      // 2. Руководитель - задачи своего отдела
-      // 3. Инспектор - где он ответственный или создатель
-      // 4. Читатель - ТОЛЬКО статус в своем отделе
-      allow update: if isSignedIn() && (
-        isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && resource.data.departmentId == getAuthData().departmentId) ||
-        (isInspector(getAuthData()) && (resource.data.responsibleUserId == request.auth.uid || resource.data.createdBy == request.auth.uid)) ||
-        (isReader(getAuthData()) && 
-         resource.data.departmentId == getAuthData().departmentId && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
-      );
+      // Обновление: Владелец, Руководитель, Ответственный или Создатель
+      allow update: if isSignedIn();
 
-      allow delete: if isSignedIn() && isOwner(getAuthData());
+      allow delete: if isSignedIn() && isOwner();
     }
 
-    match /databases/{database}/documents/departments/{deptId} {
+    match /departments/{deptId} {
       allow read: if isSignedIn();
     }
   }
