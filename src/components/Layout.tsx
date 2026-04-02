@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -6,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth as useFirebaseCore } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2, Moon, Sun, Users } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,11 +42,18 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   const isActive = (path: string) => pathname === path;
 
+  // Кто может создавать задачи
   const canCreate = userData?.role === 'owner' || 
                     userData?.role === 'director' || 
                     userData?.role === 'deputy_director' || 
                     userData?.role === 'head' || 
                     userData?.role === 'inspector';
+
+  // Кто может видеть список сотрудников
+  const canSeeStaff = userData?.role === 'owner' || 
+                      userData?.role === 'director' || 
+                      userData?.role === 'deputy_director' || 
+                      userData?.role === 'head';
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
@@ -88,10 +94,19 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
                 <LayoutDashboard className="w-4 h-4" /> Список
               </Button>
             </Link>
+            
             {canCreate && (
               <Link href="/tasks/new">
                 <Button variant={isActive('/tasks/new') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
                   <PlusCircle className="w-4 h-4" /> Создать
+                </Button>
+              </Link>
+            )}
+
+            {canSeeStaff && (
+              <Link href="/admin">
+                <Button variant={isActive('/admin') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
+                  <Users className="w-4 h-4" /> Сотрудники
                 </Button>
               </Link>
             )}
@@ -160,7 +175,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
       </div>
 
       <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl">
-        {title && !pathname.includes('/tasks/') && (
+        {title && !pathname.includes('/tasks/') && !pathname.includes('/admin') && (
           <div className="mb-6 hidden md:block border-l-4 border-primary pl-4">
             <h1 className="text-2xl font-black tracking-tight text-foreground uppercase">{title}</h1>
           </div>
@@ -170,29 +185,39 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
       <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-background/95 backdrop-blur-md border px-2 py-2 flex justify-around items-center shadow-lg rounded-2xl">
         <Link href="/" className={cn(
-          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+          "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
           isActive('/') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-black uppercase">Список</span>
+          <span className="text-[9px] font-black uppercase">Задачи</span>
         </Link>
         
         {canCreate && (
           <Link href="/tasks/new" className={cn(
-            "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+            "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
             isActive('/tasks/new') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
           )}>
             <PlusCircle className="w-5 h-5" />
-            <span className="text-[10px] font-black uppercase">Создать</span>
+            <span className="text-[9px] font-black uppercase">Создать</span>
+          </Link>
+        )}
+
+        {canSeeStaff && (
+          <Link href="/admin" className={cn(
+            "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
+            isActive('/admin') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
+          )}>
+            <Users className="w-5 h-5" />
+            <span className="text-[9px] font-black uppercase">Штат</span>
           </Link>
         )}
 
         <Link href="/profile" className={cn(
-          "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+          "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
           isActive('/profile') ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-primary/60"
         )}>
           <User className="w-5 h-5" />
-          <span className="text-[10px] font-black uppercase">Профиль</span>
+          <span className="text-[9px] font-black uppercase">Профиль</span>
         </Link>
       </nav>
     </div>
