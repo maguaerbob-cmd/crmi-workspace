@@ -23,7 +23,7 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 47% 11%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 }
 
@@ -32,7 +32,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#f1f5f9] text-slate-950 font-sans antialiased;
+    @apply bg-[#f8fafc] text-slate-950 font-sans antialiased;
   }
 }
 
@@ -50,17 +50,13 @@
   @apply bg-slate-300 rounded-full hover:bg-slate-900 transition-colors;
 }
 
-/* Строгие профессиональные инпуты */
+/* Строгие профессиональные инпуты без тяжелых обводок */
 input, textarea, select {
   @apply focus:ring-slate-950/10 !important;
-  @apply border-2 !important;
+  @apply border border-slate-200 !important;
 }
 
-/* Кастомные тени для "индустриального" стиля */
-.shadow-strict {
-  box-shadow: 4px 4px 0 0 rgba(15, 23, 42, 1);
-}
-
+/* Карточки без обводки, с мягкой тенью */
 .card-industrial {
-  @apply border-2 border-slate-950 bg-white shadow-[4px_4px_0_0_rgba(15,23,42,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_rgba(15,23,42,1)];
+  @apply border-none bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5;
 }

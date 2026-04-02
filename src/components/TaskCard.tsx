@@ -57,11 +57,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <Link href={`/tasks/${id}`}>
-      <Card className="card-industrial group rounded-none">
+      <Card className="card-industrial overflow-hidden rounded-2xl">
         <div className={`h-1.5 w-full ${PRIORITY_COLORS[priority]}`} />
         <CardHeader className="p-4 pb-2 space-y-2">
           <div className="flex justify-between items-center">
-            <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-slate-950 text-white rounded-none border-none">
+            <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-600 rounded-sm border-none">
               {status}
             </Badge>
             <div className="flex items-center gap-1">
@@ -69,7 +69,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-7 w-7 text-slate-400 hover:text-slate-950 rounded-none"
+                  className="h-7 w-7 text-slate-300 hover:text-slate-950 hover:bg-slate-50"
                   onClick={handleEditClick}
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -77,16 +77,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 rounded-none">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:bg-slate-50">
                     <MoreVertical className="w-3.5 h-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[140px] rounded-none border-2 border-slate-950 p-0 shadow-none">
+                <DropdownMenuContent align="end" className="min-w-[140px] rounded-xl border-none shadow-2xl p-1">
                   {STATUSES.map((s) => (
                     <DropdownMenuItem 
                       key={s} 
                       onClick={(e) => handleStatusChange(e as any, s)}
-                      className={`text-[9px] font-black uppercase p-2 hover:bg-slate-100 rounded-none cursor-pointer ${status === s ? "bg-slate-50" : ""}`}
+                      className={`text-[9px] font-black uppercase p-2 hover:bg-slate-50 rounded-lg cursor-pointer ${status === s ? "bg-slate-50 text-slate-900" : "text-slate-400"}`}
                     >
                       {s}
                     </DropdownMenuItem>
@@ -95,31 +95,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </DropdownMenu>
             </div>
           </div>
-          <CardTitle className="text-sm font-black line-clamp-2 text-slate-950 uppercase tracking-tight leading-tight">
+          <CardTitle className="text-sm font-black line-clamp-2 text-slate-900 uppercase tracking-tight leading-tight">
             {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0 space-y-4">
           <div className="space-y-1">
-            <div className="flex items-center text-[10px] font-black text-slate-600 gap-2 uppercase tracking-tighter">
-              <Calendar className="w-3 h-3" />
+            <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tighter">
+              <Calendar className="w-3 h-3 text-slate-300" />
               <span>{new Date(datetime).toLocaleDateString('ru-RU')} {new Date(datetime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
-            <div className="flex items-center text-[10px] font-black text-slate-600 gap-2 uppercase tracking-tighter">
-              <MapPin className="w-3 h-3" />
+            <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tighter">
+              <MapPin className="w-3 h-3 text-slate-300" />
               <span className="truncate">{place}</span>
             </div>
           </div>
           
           {checklist.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <div className="flex justify-between text-[8px] font-black text-slate-950 uppercase tracking-widest">
+            <div className="space-y-1.5 pt-3 border-t border-slate-50">
+              <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
                 <span>ПРОГРЕСС {completedItems}/{checklist.length}</span>
                 <span>{Math.round(progress)}%</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 border border-slate-200 rounded-none overflow-hidden">
+              <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-slate-950 transition-all duration-500" 
+                  className="h-full bg-slate-900 transition-all duration-500" 
                   style={{ width: `${progress}%` }} 
                 />
               </div>
