@@ -7,7 +7,6 @@ import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking
 import { collection, query, where, doc } from 'firebase/firestore';
 import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +39,15 @@ export default function AdminPage() {
     });
   };
 
+  const handleDepartmentChange = (uid: string, newDeptId: string) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { departmentId: newDeptId });
+    toast({ 
+      title: "Отдел обновлен", 
+      description: "Сотрудник успешно переведен в другой отдел." 
+    });
+  };
+
   const getAvailableRoles = (currentUserRole: string) => {
     if (currentUserRole === 'owner') return ROLES;
     return ["inspector", "reader"] as const;
@@ -59,64 +67,94 @@ export default function AdminPage() {
   return (
     <Layout title="Управление доступом">
       <div className="space-y-6">
-        <Card className="border-none shadow-sm overflow-hidden">
-          <CardHeader className="bg-primary/5 pb-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg">Сотрудники</CardTitle>
+        <Card className="border-none shadow-sm overflow-hidden bg-white rounded-3xl">
+          <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-black uppercase tracking-tight">Сотрудники</CardTitle>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Управление отделом: ${getDeptLabel(userData?.departmentId || '')}`}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Управление отделом: ${getDeptLabel(userData?.departmentId || '')}`}
-            </p>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-slate-50">
               {users?.map((user) => (
-                <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
+                <div key={user.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-6 gap-6 hover:bg-slate-50/30 transition-colors">
                   <div className="flex items-start gap-4">
-                    <Avatar className="w-10 h-10 border-2 border-white shadow-sm shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                    <Avatar className="w-12 h-12 border-4 border-white shadow-sm shrink-0">
+                      <AvatarFallback className="bg-slate-900 text-white font-black text-xs">
                         {user.name?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex flex-col space-y-1">
-                      <h3 className="text-sm font-bold text-foreground leading-none">{user.name}</h3>
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span>{user.email}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <Building2 className="w-3 h-3 text-primary/60" />
-                        <span>{getDeptLabel(user.departmentId)}</span>
+                    <div className="flex flex-col space-y-1.5">
+                      <h3 className="text-sm font-black text-slate-900 leading-none uppercase tracking-tight">{user.name}</h3>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                          <Mail className="w-3 h-3" />
+                          <span>{user.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                          <Building2 className="w-3 h-3 text-slate-300" />
+                          <span className="uppercase tracking-tighter">{getDeptLabel(user.departmentId)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 sm:gap-4">
-                    {user.role === 'owner' ? (
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-primary px-3 py-1.5 bg-primary/5 rounded-lg border border-primary/20">
-                        <Shield className="w-3 h-3" />
-                        OWNER
+                  <div className="flex flex-wrap items-center justify-start lg:justify-end gap-4 sm:gap-6 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
+                    {userData?.role === 'owner' && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Отдел</span>
+                        <Select 
+                          value={user.departmentId} 
+                          onValueChange={(v) => handleDepartmentChange(user.id, v)}
+                        >
+                          <SelectTrigger className="h-10 w-[200px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-white border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-none shadow-2xl">
+                            {DEPARTMENTS.map(dept => (
+                              <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
+                                {dept.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    ) : (
-                      <Select 
-                        value={user.role} 
-                        onValueChange={(v) => handleRoleChange(user.id, v as Role)}
-                        disabled={userData?.role !== 'owner' && user.role === 'head'}
-                      >
-                        <SelectTrigger className="h-9 w-[160px] text-xs shadow-sm bg-white border-none focus:ring-1 focus:ring-primary/20">
-                          <SelectValue placeholder="Сменить роль" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableRoles(userData?.role || '').map(role => (
-                            <SelectItem key={role} value={role} className="text-xs">
-                              {ROLE_LABELS[role as Role]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     )}
+
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Роль</span>
+                      {user.role === 'owner' ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-white px-4 py-2 bg-slate-900 rounded-xl shadow-sm uppercase tracking-widest">
+                          <Shield className="w-3 h-3" />
+                          OWNER
+                        </div>
+                      ) : (
+                        <Select 
+                          value={user.role} 
+                          onValueChange={(v) => handleRoleChange(user.id, v as Role)}
+                          disabled={userData?.role !== 'owner' && user.role === 'head'}
+                        >
+                          <SelectTrigger className="h-10 w-[140px] text-[10px] font-black uppercase tracking-widest shadow-sm bg-white border-none focus:ring-1 focus:ring-slate-900/10 rounded-xl">
+                            <SelectValue placeholder="Роль" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-none shadow-2xl">
+                            {getAvailableRoles(userData?.role || '').map(role => (
+                              <SelectItem key={role} value={role} className="text-[10px] font-black uppercase tracking-widest">
+                                {ROLE_LABELS[role as Role]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
