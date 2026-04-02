@@ -34,7 +34,7 @@ export default function NewTask() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
-    // Можно назначать ответственных только своего отдела
+    // Листинг пользователей своего отдела для назначения ответственного
     return query(collection(db, 'userProfiles'), where('departmentId', '==', userData.departmentId));
   }, [db, userData]);
 
@@ -65,7 +65,7 @@ export default function NewTask() {
       status: 'запланировано',
       departmentId: userData.departmentId,
       responsibleUserId,
-      createdBy: user.uid, // Добавлено для правил безопасности (Инспектор)
+      createdBy: user.uid, // Критично для правил доступа (Инспектор)
       checklist,
       createdAt: new Date().toISOString()
     });

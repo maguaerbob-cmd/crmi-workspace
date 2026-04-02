@@ -10,13 +10,13 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%;
+    --primary: 222 47% 11%; /* Slate 900 - Строгий графитовый */
     --primary-foreground: 210 40% 98%;
-    --secondary: 215 25% 27%;
+    --secondary: 215 25% 27%; /* Slate 700 */
     --secondary-foreground: 210 40% 98%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 221 83% 53%;
+    --accent: 221 83% 53%; /* Blue 600 - Профессиональный синий */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
@@ -55,7 +55,7 @@ input, textarea, select {
   @apply focus:ring-slate-900/5 !important;
 }
 
-/* Кастомные тени для "мужского" стиля */
+/* Кастомные тени для "индустриального" стиля */
 .shadow-strict {
   box-shadow: 0 4px 0 0 rgba(15, 23, 42, 0.05);
 }
