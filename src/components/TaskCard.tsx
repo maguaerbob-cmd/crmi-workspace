@@ -58,27 +58,33 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
-  // Более интенсивное свечение для лучшей видимости в обеих темах
-  const getGlowClass = (p: Priority) => {
-    switch (p) {
-      case 'высокий': return "shadow-[0_0_30px_-5px_rgba(239,68,68,0.6)] dark:shadow-[0_0_35px_-8px_rgba(239,68,68,0.8)]";
-      case 'средний': return "shadow-[0_0_25px_-5px_rgba(234,179,8,0.5)] dark:shadow-[0_0_30px_-8px_rgba(234,179,8,0.7)]";
-      case 'низкий': return "shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] dark:shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]";
-      default: return "";
+  // Нормализуем приоритет для безопасности
+  const p = (priority?.toLowerCase() || 'средний') as Priority;
+
+  const getGlowClass = (priorityValue: Priority) => {
+    switch (priorityValue) {
+      case 'высокий': 
+        return "shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] dark:shadow-[0_0_30px_-5px_rgba(220,38,38,0.7)]";
+      case 'средний': 
+        return "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)] dark:shadow-[0_0_25px_-5px_rgba(234,179,8,0.6)]";
+      case 'низкий': 
+        return "shadow-[0_0_15px_-5px_rgba(22,163,74,0.3)] dark:shadow-[0_0_20px_-5px_rgba(22,163,74,0.5)]";
+      default: 
+        return "";
     }
   };
 
-  const priorityColor = PRIORITY_COLORS[priority] || "bg-muted";
+  const priorityColor = PRIORITY_COLORS[p] || "bg-muted";
 
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
         "card-industrial overflow-hidden rounded-2xl group border-none transition-all duration-300 hover:scale-[1.02] bg-card",
-        getGlowClass(priority)
+        getGlowClass(p)
       )}>
         <div className="flex min-h-[160px]">
           {/* Левая полоса цвета приоритета */}
-          <div className={cn("w-1.5 shrink-0 transition-colors", priorityColor)} />
+          <div className={cn("w-2 shrink-0 transition-colors", priorityColor)} />
           
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">

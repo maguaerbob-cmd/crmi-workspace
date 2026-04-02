@@ -64,7 +64,8 @@ export default function TaskDetails() {
   const isHeadOfDept = userData?.role === 'head' && userData?.departmentId === task?.departmentId;
   const isCompleted = task?.status === 'завершено';
 
-  const canDelete = !isReader && (isGlobalManager || ((isCreator || isHeadOfDept) && !isCompleted));
+  // Владелец может удалять всё, остальные только незавершенные свои или своего отдела
+  const canDelete = isGlobalManager || (!isReader && (isCreator || isHeadOfDept) && !isCompleted);
 
   const handleToggleCheck = (index: number) => {
     if (!taskRef || !canEdit) return;
@@ -113,7 +114,8 @@ export default function TaskDetails() {
 
   const completedCount = checklist.filter(i => i.done).length;
   const progress = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
-  const priorityColor = PRIORITY_COLORS[task.priority as Priority] || "bg-muted";
+  const priorityKey = (task.priority?.toLowerCase() || 'средний') as Priority;
+  const priorityColor = PRIORITY_COLORS[priorityKey] || "bg-muted";
 
   return (
     <Layout title={task.title} showBack>
@@ -165,13 +167,18 @@ export default function TaskDetails() {
         </div>
 
         <Card className="border-none shadow-sm overflow-hidden bg-card rounded-3xl">
-          <div className={cn("h-2 w-full transition-colors", priorityColor)} />
+          <div className={cn("h-2.5 w-full transition-colors", priorityColor)} />
           <CardHeader className="p-6 md:p-8 space-y-4">
             <div className="flex justify-between items-center">
               <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 py-1 border-none bg-muted text-muted-foreground">
                 {task.status}
               </Badge>
-              <span className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em]">
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded",
+                priorityKey === 'высокий' ? "text-red-500 bg-red-500/10" : 
+                priorityKey === 'низкий' ? "text-green-500 bg-green-500/10" : 
+                "text-yellow-500 bg-yellow-500/10"
+              )}>
                 {task.priority} приоритет
               </span>
             </div>
