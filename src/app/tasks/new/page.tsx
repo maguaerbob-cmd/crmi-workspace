@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { X, Plus, Calendar, MapPin, Flag, User as UserIcon, Loader2 } from 'lucide-react';
 
 export default function NewTask() {
-  const { userData } = useAuth();
+  const { userData, user } = useAuth();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -34,6 +34,7 @@ export default function NewTask() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || !userData) return null;
+    // Можно назначать ответственных только своего отдела
     return query(collection(db, 'userProfiles'), where('departmentId', '==', userData.departmentId));
   }, [db, userData]);
 
@@ -52,7 +53,7 @@ export default function NewTask() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db || !userData || isSubmitting) return;
+    if (!db || !userData || !user || isSubmitting) return;
     
     setIsSubmitting(true);
     addDocumentNonBlocking(collection(db, 'tasks'), {
@@ -64,11 +65,12 @@ export default function NewTask() {
       status: 'запланировано',
       departmentId: userData.departmentId,
       responsibleUserId,
+      createdBy: user.uid, // Добавлено для правил безопасности (Инспектор)
       checklist,
       createdAt: new Date().toISOString()
     });
     
-    toast({ title: "Успех", description: "Задача успешно создана в рабочем пространстве" });
+    toast({ title: "Успех", description: "Задача создана в базе организации" });
     router.push('/');
   };
 
@@ -80,13 +82,13 @@ export default function NewTask() {
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Заголовок задачи</Label>
+                <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Название задачи</Label>
                 <Input 
                   id="title" 
                   required 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Назовите задачу кратко и ясно..." 
+                  placeholder="Введите краткий заголовок..." 
                   className="h-12 text-lg font-black border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl"
                 />
               </div>
@@ -95,7 +97,7 @@ export default function NewTask() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Calendar className="w-4 h-4 text-slate-900" />
-                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата и время</Label>
+                    <Label htmlFor="datetime" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Срок исполнения</Label>
                   </div>
                   <Input 
                     id="datetime" 
@@ -110,14 +112,14 @@ export default function NewTask() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <MapPin className="w-4 h-4 text-slate-900" />
-                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Локация</Label>
+                    <Label htmlFor="place" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Место выполнения</Label>
                   </div>
                   <Input 
                     id="place" 
                     required 
                     value={place} 
                     onChange={(e) => setPlace(e.target.value)} 
-                    placeholder="Место проведения..." 
+                    placeholder="Локация..." 
                     className="h-12 border-slate-200 bg-white rounded-xl font-bold"
                   />
                 </div>
@@ -125,7 +127,7 @@ export default function NewTask() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Flag className="w-4 h-4 text-slate-900" />
-                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Важность</Label>
+                    <Label htmlFor="priority" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Приоритет</Label>
                   </div>
                   <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
                     <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
@@ -140,7 +142,7 @@ export default function NewTask() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <UserIcon className="w-4 h-4 text-slate-900" />
-                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ответственный</Label>
+                    <Label htmlFor="responsible" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Исполнитель</Label>
                   </div>
                   <Select value={responsibleUserId} onValueChange={setResponsibleUserId} required>
                     <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
@@ -153,23 +155,23 @@ export default function NewTask() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Техническое задание / Описание</Label>
+                  <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Детальное описание</Label>
                   <Textarea 
                     id="description" 
                     required 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
-                    placeholder="Подробно опишите задачу и требования..."
+                    placeholder="Опишите требования к задаче..."
                     className="min-h-[150px] border-slate-200 bg-white rounded-xl p-4 text-sm font-medium leading-relaxed" 
                   />
                 </div>
 
                 <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Чек-лист исполнения</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Контрольный чек-лист</Label>
                   
                   <div className="flex gap-3">
                     <Input 
-                      placeholder="Добавить новый пункт..." 
+                      placeholder="Добавить этап..." 
                       value={newCheckItem} 
                       onChange={(e) => setNewCheckItem(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCheckItem())}
@@ -184,25 +186,20 @@ export default function NewTask() {
                     {checklist.map((item, index) => (
                       <div key={index} className="flex items-center justify-between bg-white border-2 border-slate-100 px-4 py-3 rounded-xl group hover:border-slate-200 transition-all">
                         <span className="text-sm font-bold text-slate-800">{item.text}</span>
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive hover:bg-destructive/5" onClick={() => handleRemoveCheckItem(index)}>
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-destructive" onClick={() => handleRemoveCheckItem(index)}>
                           <X className="h-5 h-5" />
                         </Button>
                       </div>
                     ))}
-                    {checklist.length === 0 && (
-                      <div className="text-center py-6 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Список пуст</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 flex flex-col sm:flex-row gap-4">
-                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-900 text-white shadow-2xl hover:bg-slate-800 transition-all">
-                  {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : "Опубликовать задачу"}
+                <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 rounded-2xl text-xs font-black uppercase tracking-[0.2em] bg-slate-900 text-white shadow-2xl hover:bg-slate-800">
+                  {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : "Создать задачу"}
                 </Button>
-                <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-2 hover:bg-slate-50" onClick={() => router.back()}>
+                <Button type="button" variant="outline" className="h-14 px-10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-2" onClick={() => router.back()}>
                   Отмена
                 </Button>
               </div>
