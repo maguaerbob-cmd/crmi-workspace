@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -18,6 +19,10 @@
           "type": "string",
           "description": "The email address of the user, used for authentication.",
           "format": "email"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's profile picture."
         },
         "role": {
           "type": "string",

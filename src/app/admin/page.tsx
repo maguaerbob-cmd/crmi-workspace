@@ -9,7 +9,7 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { ROLES, Role, ROLE_LABELS, DEPARTMENTS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Mail, Building2, UserCog, Trash2, Check, X } from 'lucide-react';
@@ -118,8 +118,9 @@ export default function AdminPage() {
                   <CardContent className="p-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="w-10 h-10 border-2 border-background">
-                        <AvatarFallback className="bg-yellow-500 text-white font-black text-xs">
-                          {user.name?.substring(0, 2).toUpperCase()}
+                        <AvatarImage src={user.photoURL} className="object-cover" />
+                        <AvatarFallback className="bg-yellow-500 text-white font-black text-xs uppercase">
+                          {user.name?.substring(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -206,8 +207,9 @@ export default function AdminPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="w-12 h-12 border-2 border-background shadow-sm shrink-0">
-                        <AvatarFallback className="bg-foreground text-background font-black text-xs">
-                          {user.name?.substring(0, 2).toUpperCase()}
+                        <AvatarImage src={user.photoURL} className="object-cover" />
+                        <AvatarFallback className="bg-foreground text-background font-black text-xs uppercase">
+                          {user.name?.substring(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       

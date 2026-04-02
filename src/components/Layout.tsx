@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -9,6 +10,7 @@ import { LayoutDashboard, PlusCircle, User, LogOut, ChevronLeft, Loader2, Moon, 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useTheme } from '@/components/ThemeProvider';
@@ -93,18 +95,27 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
                 </Button>
               </Link>
             )}
-            <Link href="/profile">
-              <Button variant={isActive('/profile') ? 'secondary' : 'ghost'} size="sm" className="gap-2 h-9 font-bold text-[11px] uppercase tracking-wider">
-                <User className="w-4 h-4" /> Профиль
-              </Button>
-            </Link>
             
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-primary ml-1">
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <div className="w-px h-6 bg-border mx-2" />
+
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-primary mr-1">
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
+            <Link href="/profile">
+              <Avatar className={cn(
+                "h-8 w-8 transition-all hover:ring-2 hover:ring-primary/20",
+                isActive('/profile') && "ring-2 ring-primary"
+              )}>
+                <AvatarImage src={userData?.photoURL} className="object-cover" />
+                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                  {userData?.name?.substring(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+
             <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive ml-1">
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
             </Button>
           </nav>
         </div>
@@ -138,9 +149,12 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
             {theme === 'dark' ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}
           </Button>
           <Link href="/profile">
-            <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-[11px] font-black text-primary uppercase border border-primary/20">
-              {userData?.name?.substring(0, 2)}
-            </div>
+            <Avatar className="h-9 w-9 border-2 border-primary/10">
+              <AvatarImage src={userData?.photoURL} className="object-cover" />
+              <AvatarFallback className="text-[11px] font-black text-primary uppercase">
+                {userData?.name?.substring(0, 2)}
+              </AvatarFallback>
+            </Avatar>
           </Link>
         </div>
       </div>

@@ -1,30 +1,61 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuth as useFirebaseCore } from '@/firebase';
+import { useAuth as useFirebaseCore, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Building, ShieldCheck, Mail, Calendar } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LogOut, Building, ShieldCheck, Mail, Calendar, Edit2, Check, X, Camera } from 'lucide-react';
 import { DEPARTMENTS, ROLE_LABELS, Role } from '@/lib/constants';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const { userData } = useAuth();
   const auth = useFirebaseCore();
+  const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhotoURL, setEditPhotoURL] = useState('');
 
   const logo = PlaceHolderImages.find(img => img.id === 'app-logo');
+
+  useEffect(() => {
+    if (userData) {
+      setEditName(userData.name || '');
+      setEditPhotoURL(userData.photoURL || '');
+    }
+  }, [userData]);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/login');
+  };
+
+  const handleSave = () => {
+    if (!userData || !db) return;
+    updateDocumentNonBlocking(doc(db, 'userProfiles', userData.id), {
+      name: editName,
+      photoURL: editPhotoURL
+    });
+    setIsEditing(false);
+    toast({
+      title: "ПРОФИЛЬ ОБНОВЛЕН",
+      description: "Ваши данные были успешно сохранены в системе."
+    });
   };
 
   const currentDepartment = DEPARTMENTS.find(d => d.id === userData?.departmentId);
@@ -48,20 +79,64 @@ export default function ProfilePage() {
           </div>
           
           <CardContent className="pt-8 px-6 pb-8">
-            <div className="flex flex-col items-center mb-8">
-              <Avatar className="h-24 w-24 mb-4 shadow-sm border-4 border-background">
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-black">
-                  {userData?.name?.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-black text-foreground tracking-tight uppercase">
-                {userData?.name}
-              </h2>
-              <div className="mt-2">
-                <Badge variant="secondary" className="px-3 py-1 text-[9px] font-black uppercase tracking-[0.1em] bg-primary/10 text-primary border-none">
-                  {ROLE_LABELS[userData?.role as Role] || 'Сотрудник'}
-                </Badge>
+            <div className="flex flex-col items-center mb-8 relative">
+              <div className="relative">
+                <Avatar className="h-24 w-24 mb-4 shadow-sm border-4 border-background">
+                  <AvatarImage src={userData?.photoURL} className="object-cover" />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-black uppercase">
+                    {userData?.name?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                {isEditing && (
+                  <div className="absolute bottom-4 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                )}
               </div>
+              
+              {!isEditing ? (
+                <>
+                  <h2 className="text-xl font-black text-foreground tracking-tight uppercase flex items-center gap-2">
+                    {userData?.name}
+                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsEditing(true)}>
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  </h2>
+                  <div className="mt-2">
+                    <Badge variant="secondary" className="px-3 py-1 text-[9px] font-black uppercase tracking-[0.1em] bg-primary/10 text-primary border-none">
+                      {ROLE_LABELS[userData?.role as Role] || 'Сотрудник'}
+                    </Badge>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full space-y-4 px-4">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Имя в системе</Label>
+                    <Input 
+                      value={editName} 
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="h-10 text-sm font-bold rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ссылка на фото (Avatar URL)</Label>
+                    <Input 
+                      placeholder="https://example.com/photo.jpg" 
+                      value={editPhotoURL} 
+                      onChange={(e) => setEditPhotoURL(e.target.value)}
+                      className="h-10 text-sm font-bold rounded-xl"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest" onClick={handleSave}>
+                      <Check className="w-3 h-3 mr-1" /> Сохранить
+                    </Button>
+                    <Button variant="outline" className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest border-2" onClick={() => setIsEditing(false)}>
+                      <X className="w-3 h-3 mr-1" /> Отмена
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-3">
