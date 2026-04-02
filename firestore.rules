@@ -7,26 +7,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Профили пользователей: чтение доступно всем сотрудникам для координации
+    function getUserData() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
+    }
+
+    // Профили пользователей
     match /userProfiles/{userId} {
       allow read, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (
         request.auth.uid == userId || 
-        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner'
+        getUserData().role == 'owner'
       );
-      // Только владелец может удалять профили сотрудников
-      allow delete: if isSignedIn() && 
-        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner';
+      allow delete: if isSignedIn() && getUserData().role == 'owner';
     }
 
-    // Задачи: чтение открыто для всех сотрудников организации
+    // Задачи
     match /tasks/{taskId} {
       allow read, list: if isSignedIn();
       allow create: if isSignedIn();
       allow update: if isSignedIn();
-      allow delete: if isSignedIn() && 
-        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'owner';
+      
+      // Логика удаления:
+      // 1. Владелец может все
+      // 2. Создатель или Руководитель отдела могут удалять только НЕ завершенные задачи
+      allow delete: if isSignedIn() && (
+        getUserData().role == 'owner' || 
+        (
+          (request.auth.uid == resource.data.createdBy || 
+           (getUserData().role == 'head' && getUserData().departmentId == resource.data.departmentId)) &&
+          resource.data.status != 'завершено'
+        )
+      );
     }
 
     match /departments/{deptId} {
