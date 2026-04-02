@@ -58,20 +58,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     router.push(`/tasks/${id}/edit`);
   };
 
+  // Более интенсивное свечение для лучшей видимости в обеих темах
   const glowClasses = {
-    "низкий": "shadow-[0_0_15px_-5px_rgba(34,197,94,0.3)]",
-    "средний": "shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)]",
-    "высокий": "shadow-[0_0_25px_-5px_rgba(239,68,68,0.5)]"
+    "низкий": "shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] dark:shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]",
+    "средний": "shadow-[0_0_25px_-5px_rgba(234,179,8,0.5)] dark:shadow-[0_0_30px_-8px_rgba(234,179,8,0.7)]",
+    "высокий": "shadow-[0_0_30px_-5px_rgba(239,68,68,0.6)] dark:shadow-[0_0_35px_-8px_rgba(239,68,68,0.8)]"
   };
 
   return (
     <Link href={`/tasks/${id}`}>
       <Card className={cn(
         "card-industrial overflow-hidden rounded-2xl group border-none transition-all duration-300 hover:scale-[1.02]",
-        glowClasses[priority]
+        glowClasses[priority] || ""
       )}>
         <div className="flex min-h-[160px]">
-          <div className={cn("w-1.5 shrink-0 transition-colors", PRIORITY_COLORS[priority])} />
+          {/* Левая полоса цвета приоритета */}
+          <div className={cn("w-1.5 shrink-0 transition-colors", PRIORITY_COLORS[priority] || "bg-muted")} />
           
           <div className="flex-1 flex flex-col">
             <CardHeader className="p-4 pb-2 space-y-2">
@@ -96,7 +98,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                             <MoreVertical className="w-3.5 h-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[140px] rounded-xl border-none shadow-2xl p-1">
+                        <DropdownMenuContent align="end" className="min-w-[140px] rounded-xl border-none shadow-2xl p-1 bg-card">
                           {STATUSES.map((s) => (
                             <DropdownMenuItem 
                               key={s} 
@@ -129,14 +131,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </div>
               
               <div className="flex items-center justify-between pt-3 border-t border-border/50 mt-2">
-                <div className="flex items-center gap-1.5">
-                  <UserCircle className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight truncate max-w-[120px]">
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                  <UserCircle className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight truncate">
                     Создал: {createdByName || '—'}
                   </span>
                 </div>
                 {checklist.length > 0 && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[9px] font-black text-foreground bg-accent px-1.5 py-0.5 rounded">
                       {Math.round(progress)}%
                     </span>
