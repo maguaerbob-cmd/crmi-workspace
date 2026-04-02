@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -29,7 +30,7 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "Ошибка входа",
-        description: "Неверный email или пароль",
+        description: "Неверный логин или пароль",
       });
     } finally {
       setLoading(false);
@@ -37,19 +38,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md shadow-xl border-none">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">C</div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md shadow-2xl border-none bg-white rounded-2xl overflow-hidden">
+        <div className="h-1.5 bg-slate-900" />
+        <CardHeader className="space-y-1 text-center pt-10">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-xl">C</div>
           </div>
-          <CardTitle className="text-2xl font-headline text-primary">CRMI WORKSPACE</CardTitle>
-          <CardDescription>Введите данные для входа в систему</CardDescription>
+          <CardTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Авторизация</CardTitle>
+          <CardDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">
+            Введите данные для входа
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+        <CardContent className="px-8 pb-10">
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -57,28 +61,30 @@ export default function Login() {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl font-bold"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Пароль</Label>
               <Input 
                 id="password" 
                 type="password" 
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-12 border-slate-200 bg-slate-50 focus-visible:ring-slate-900/10 rounded-xl font-bold"
               />
             </div>
-            <Button type="submit" className="w-full h-11" disabled={loading}>
-              {loading ? "Вход..." : "Войти"}
+            <Button type="submit" className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all" disabled={loading}>
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Войти в систему"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4 text-center">
-          <div className="text-sm text-muted-foreground">
+        <CardFooter className="flex flex-col space-y-4 text-center bg-slate-50 p-6 border-t border-slate-100">
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Нет аккаунта?{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Зарегистрироваться
+            <Link href="/register" className="text-slate-900 hover:underline">
+              Создать профиль
             </Link>
           </div>
         </CardFooter>
