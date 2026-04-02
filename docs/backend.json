@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user within the CRMI task management system, including their authentication details, role, and departmental affiliation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user, used for authentication.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The assigned role of the user within the system, determining their access permissions.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Reference to the Department entity the user belongs to. (Relationship: Department 1:N UserProfile)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "departmentId",
+        "createdAt"
+      ]
+    },
+    "Department": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Department",
+      "type": "object",
+      "description": "Represents a department within the CRMI organization. Departments are responsible for tasks and define user affiliations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Department entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the department.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task or event managed within the CRMI system, including its details, status, and responsible parties.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The main title or short name of the task."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "The planned date and time for the task or event.",
+          "format": "date-time"
+        },
+        "place": {
+          "type": "string",
+          "description": "The physical location where the task will take place."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the task's objectives and requirements."
+        },
+        "checklist": {
+          "type": "array",
+          "description": "A list of sub-items or steps required to complete the task.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "description": "The urgency level of the task.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "The current progress status of the task.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Reference to the Department entity that owns or is responsible for this task. (Relationship: Department 1:N Task)"
+        },
+        "responsibleUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity who is designated as responsible for this task. (Relationship: UserProfile 1:N Task)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the task was initially created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "dateTime",
+        "place",
+        "description",
+        "checklist",
+        "priority",
+        "status",
+        "departmentId",
+        "responsibleUserId",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores individual user profiles, including their unique ID (matching Firebase Auth UID), name, email, assigned role, and departmental affiliation ID. The 'role' and 'departmentId' fields are critical for authorization checks and will be referenced by rules using a self-get operation for the requesting user's own profile. This collection also explicitly allows a Department Head to update roles (inspector/reader) and departmentId for users within their own department, which requires checking both the requesting user's and the target user's department IDs for consistency within Firestore rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/departments/{departmentId}",
+        "definition": {
+          "entityName": "Department",
+          "schema": {
+            "$ref": "#/backend/entities/Department"
+          },
+          "description": "Contains a fixed list of CRMI departments. Each document represents a department with its name and a slug-like ID. This collection is primarily read-only for most authenticated users, serving as a lookup for department affiliations in user profiles and tasks. Department IDs will be consistent across UserProfile and Task entities.",
+          "params": [
+            {
+              "name": "departmentId",
+              "description": "The unique, slug-like identifier for a department (e.g., 'technical-service-center')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "A top-level collection for all tasks within the CRMI system. Each task document includes denormalized 'departmentId', 'responsibleUserId', and 'status' fields. These fields are critical for enforcing role-based and department-based access controls directly within Firestore security rules, supporting secure 'list' operations (QAPs) without relying on 'get()' calls to other documents for task authorization. The 'checklist' field will be an array of objects `{text: string, done: boolean}`.",
+          "params": [
+            {
+              "name": "taskId",
+              "description": "The unique identifier for a specific task."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable, adhering strictly to the core design principles and mandates. The strategy prioritizes Authorization Independence, Structural Segregation, and consistent Access Modeling.\n\n**Authorization Independence (CRITICAL):**\nTo avoid complex, performance-hindering, and fragile hierarchical authorization dependencies (`get()` calls that traverse parent-child relationships) in security rules, the following approach is taken:\n1.  **User Authorization Context:** Each user's `role` and `departmentId` are stored directly within their `UserProfile` document at `/userProfiles/{userId}`. Security rules will rely on a single, self-referential `get(/userProfiles/$(request.auth.uid))` operation to retrieve the *requesting user's own* authorization context (their role and department ID). This is a well-established and efficient pattern for database-backed access control (DBAC) and is not considered a 'hierarchical authorization dependency' as it does not rely on another entity's data.\n2.  **Task Authorization Data:** All data necessary for authorizing access to a specific `Task` (namely `departmentId`, `responsibleUserId`, and `status`) are directly denormalized onto the `Task` document itself. This ensures that security rules for `Tasks` can evaluate permissions by inspecting `resource.data` and `request.resource.data` without any additional `get()` calls to other collections (e.g., to a parent department or an owner's profile).\n\n**Querying and Authorization Posture (QAPs - Rules are not Filters):**\nThe structure ensures that `list` operations (queries) are secure and that rules, not client-side filters, enforce access.\n1.  **`/userProfiles/{userId}`:** User profiles are primarily accessed by the owner (`request.auth.uid == userId`) or by the global `owner` role. `List` operations are tightly restricted, ensuring users can only query their own data or, for `owner`, all user data.\n2.  **`/departments/{departmentId}`:** This collection is designed for read-only access for all authenticated users. `List` operations here are inherently secure as all documents are visible to all authenticated users, fulfilling the QAP.\n3.  **`/tasks/{taskId}` (Main Task Collection):** This is a crucial area for QAPs due to varied access rules:\n    *   **Global Access Roles:** Users with the `owner` role, or belonging to the `Technical Service Center` or `Media Center` departments, have explicit permission to `list` (query) all tasks. The security rules will allow their `list` requests without requiring a `where` clause for `departmentId`, effectively granting them full visibility.\n    *   **Department-Scoped Access Roles:** For `departmentHead`, `inspector`, and `reader` roles, who are restricted to tasks within their department, the security rules will **enforce** that any `list` operation *must* include a `where('departmentId', '==', <user's_department_ID>)` clause. If a client attempts to list tasks without this specific filter, or with a filter for an unauthorized department, the request will be denied. This design guarantees that `list` operations only return authorized documents while also preventing over-fetching of data. Additionally, rules will handle the `status == 'завершено'` visibility for completed tasks, ensuring only `owner` can retrieve them, and enforcing the client to include the correct filter if they want to retrieve completed tasks.\n\n**Structural Segregation & Access Modeling:**\n*   **User Profiles (`/userProfiles/{userId}`):** Dedicated collection for user-specific data, with ownership tied to `request.auth.uid`. Enables individual users to manage their own data and `owner` to manage all.\n*   **Departments (`/departments/{departmentId}`):** A top-level collection for organization departments. Designed as a fixed, read-only list for most users, supporting simple `list` queries. Department IDs (`creative-youth-center`, `technical-service-center`, etc.) will be used consistently across `UserProfile` and `Task` documents.\n*   **Tasks (`/tasks/{taskId}`):** A single top-level collection holds all tasks. This allows global access roles (Owner, Technical Service, Media Center) to efficiently query all tasks using collection group queries or simple unfiltered `list` operations. Authorization fields (`departmentId`, `responsibleUserId`, `status`) are embedded in each `Task` document, simplifying per-document access checks."
+  }
+}

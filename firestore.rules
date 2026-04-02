@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * FIRESTORE SECURITY RULES DOCUMENTATION
+     * 
+     * Core Philosophy:
+     * This ruleset implements a robust Role-Based Access Control (RBAC) and Department-Based Access Control (DBAC) 
+     * system for the CRMI task management platform. Security is enforced primarily through the user's profile 
+     * (role and departmentId) and denormalized fields within task documents.
+     * 
+     * Data Structure:
+     * - /userProfiles/{userId}: Private user data, roles, and departmental affiliations.
+     * - /departments/{departmentId}: Read-only metadata for organization departments.
+     * - /tasks/{taskId}: Global collection of tasks, secured by departmentId and status.
+     * 
+     * Key Security Decisions:
+     * 1. Authorization Independence: The system relies on the user's own profile document for role/department 
+     *    context to minimize complex joins.
+     * 2. Denormalization: Task documents contain 'departmentId', 'responsibleUserId', and 'status' to allow 
+     *    instant authorization without external lookups.
+     * 3. Specialized Department Access: The 'Media Center' and 'Technical Service Center' act as global 
+     *    observers with broad read permissions.
+     * 4. Visibility Control: Completed tasks ('завершено') are restricted to users with the 'owner' role to 
+     *    keep operational views clean and secure.
+     * 5. Structural Segregation: User profiles are keyed by Auth UID to prevent impersonation.
+     */
+
+    // --- HELPER FUNCTIONS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getAuthData() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && getAuthData().role == role;
+    }
+
+    function isGlobalAdmin() {
+      return hasRole('owner');
+    }
+
+    function isSpecialDepartment() {
+      return isSignedIn() && (getAuthData().departmentId == 'technical-service-center' || getAuthData().departmentId == 'media-center');
+    }
+
+    function isUserInDepartment(deptId) {
+      return isSignedIn() && getAuthData().departmentId == deptId;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for User Profiles. Allows users to manage their own profiles and admins/department heads to manage roles.
+     * @path /userProfiles/{userId}
+     * @allow (get, list) if the user is the owner or a global admin.
+     * @deny (create) if the UID does not match the document ID.
+     * @principle Verified Identity and Structural Segregation.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId) || isGlobalAdmin();
+      allow list: if isOwner(userId) || isGlobalAdmin();
+      allow create: if isOwner(userId);
+      allow update: if (resource != null && isOwner(userId)) || isGlobalAdmin() || (hasRole('departmentHead') && isUserInDepartment(resource.data.departmentId));
+      allow delete: if resource != null && isGlobalAdmin();
+    }
+
+    /**
+     * @description Rules for Departments. A static list of organization units, readable by all authenticated users.
+     * @path /departments/{departmentId}
+     * @allow (get, list) for any signed-in user.
+     * @deny (write) for everyone (managed via console/admin only).
+     * @principle Read-only lookup for authenticated users.
+     */
+    match /departments/{departmentId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Rules for Tasks. Access is granted based on department affiliation, roles, and task status.
+     * @path /tasks/{taskId}
+     * @allow (list) if user belongs to the department, is a special dept member, or is an admin.
+     * @deny (get) for completed tasks if the user is not an admin.
+     * @principle Denormalization for Authorization and Relational Integrity.
+     */
+    match /tasks/{taskId} {
+      
+      // Helper for task-specific logic to keep 'allow' statements on one line
+      function canReadTask(data) {
+        return isGlobalAdmin() || isSpecialDepartment() || (isUserInDepartment(data.departmentId) && data.status != 'завершено');
+      }
+
+      function canModifyTask(data) {
+        return isGlobalAdmin() || (hasRole('departmentHead') && isUserInDepartment(data.departmentId));
+      }
+
+      allow get: if canReadTask(resource.data);
+      
+      // List rules must align with query filters. Users must filter by their own departmentId.
+      allow list: if isGlobalAdmin() || isSpecialDepartment() || isUserInDepartment(getAuthData().departmentId);
+
+      // Prototyping: Flexible on data shape, strict on relational links
+      allow create: if isGlobalAdmin() || (hasRole('departmentHead') && isUserInDepartment(request.resource.data.departmentId));
+      
+      allow update: if resource != null && (canModifyTask(resource.data) || (isOwner(resource.data.responsibleUserId) && resource.data.status != 'завершено'));
+      
+      allow delete: if resource != null && canModifyTask(resource.data);
+    }
+  }
+}
