@@ -31,12 +31,10 @@ export default function Dashboard() {
     
     let result = tasks;
 
-    // Скрываем завершенные для всех, кроме владельца
     if (userData?.role !== 'owner') {
       result = result.filter(task => task.status !== 'завершено');
     }
 
-    // Поиск
     if (search.trim()) {
       const lowerSearch = search.toLowerCase();
       result = result.filter(task => 
@@ -46,7 +44,6 @@ export default function Dashboard() {
       );
     }
 
-    // Фильтр по отделу
     if (selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
@@ -59,10 +56,10 @@ export default function Dashboard() {
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative group flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-950 transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input 
               placeholder="ПОИСК ПО ЗАДАЧАМ..." 
-              className="pl-10 h-12 bg-white border-none shadow-sm rounded-xl text-xs font-black uppercase tracking-widest focus-visible:ring-1 focus-visible:ring-primary/20"
+              className="pl-10 h-12 bg-card border-none shadow-sm rounded-xl text-xs font-black uppercase tracking-widest focus-visible:ring-1 focus-visible:ring-primary/20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -70,9 +67,9 @@ export default function Dashboard() {
           
           <div className="w-full md:w-80">
             <Select value={selectedDept} onValueChange={setSelectedDept}>
-              <SelectTrigger className="h-12 bg-white border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-950 focus:ring-1 focus:ring-primary/20">
+              <SelectTrigger className="h-12 bg-card border-none shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20">
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-slate-400" />
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
                   <SelectValue placeholder="ВСЕ ОТДЕЛЫ" />
                 </div>
               </SelectTrigger>
@@ -88,14 +85,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div className="flex items-center justify-between border-b border-border pb-2">
           <div className="flex items-center gap-2">
-            <Filter className="w-3 h-3 text-slate-400" />
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <Filter className="w-3 h-3 text-muted-foreground" />
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
               {selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`}
             </h2>
           </div>
-          <div className="text-[10px] font-black text-white bg-slate-950 px-3 py-1 uppercase rounded-sm">
+          <div className="text-[10px] font-black text-primary-foreground bg-foreground px-3 py-1 uppercase rounded-sm">
             ИТОГО: {filteredTasks.length}
           </div>
         </div>
@@ -103,13 +100,12 @@ export default function Dashboard() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <Skeleton key={i} className="h-44 w-full rounded-xl bg-white shadow-sm" />
+              <Skeleton key={i} className="h-44 w-full rounded-xl" />
             ))}
           </div>
         ) : filteredTasks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTasks.map(task => {
-              // Роль "reader" никогда не может редактировать задачи
               const isReader = userData?.role === 'reader';
               const canEdit = !isReader && (
                 userData?.role === 'owner' || 
@@ -129,11 +125,11 @@ export default function Dashboard() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl shadow-sm border border-slate-100 border-dashed">
-            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
-              <FolderKanban className="w-8 h-8 text-slate-300" />
+          <div className="flex flex-col items-center justify-center py-32 bg-card rounded-3xl shadow-sm border border-border border-dashed">
+            <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mb-4">
+              <FolderKanban className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.4em]">ЗАДАЧ НЕ НАЙДЕНО</p>
+            <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.4em]">ЗАДАЧ НЕ НАЙДЕНО</p>
           </div>
         )}
       </div>

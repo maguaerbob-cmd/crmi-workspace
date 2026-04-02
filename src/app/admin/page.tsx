@@ -88,39 +88,38 @@ export default function AdminPage() {
   return (
     <Layout title="Управление персоналом">
       <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="flex items-center justify-between border-b border-border pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center shadow-lg">
-              <UserCog className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-foreground rounded-xl flex items-center justify-center shadow-lg">
+              <UserCog className="w-5 h-5 text-background" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Сотрудники</h1>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              <h1 className="text-xl font-black text-foreground uppercase tracking-tight">Сотрудники</h1>
+              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                 {userData?.role === 'owner' ? 'Полный доступ ко всем отделам' : `Отдел: ${getDeptLabel(userData?.departmentId || '')}`}
               </p>
             </div>
           </div>
-          <div className="text-[10px] font-black text-white bg-slate-950 px-4 py-1.5 uppercase rounded-lg shadow-sm">
+          <div className="text-[10px] font-black text-background bg-foreground px-4 py-1.5 uppercase rounded-lg shadow-sm">
             Всего: {users?.length || 0}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3">
           {users?.map((user) => (
-            <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white rounded-2xl overflow-hidden relative group">
-              {/* Кнопка удаления в верхнем углу (только для владельца и не самого себя) */}
+            <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
               {userData?.role === 'owner' && userData?.id !== user.id && (
                 <div className="absolute top-3 right-3 z-10">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-destructive hover:bg-destructive/5 transition-colors">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="text-sm font-black uppercase tracking-tight">Удалить сотрудника?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-xs font-bold text-slate-400 uppercase leading-relaxed">
+                        <AlertDialogDescription className="text-xs font-bold text-muted-foreground uppercase leading-relaxed">
                           Профиль {user.name} будет навсегда исключен из системы. Это действие нельзя отменить.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -128,7 +127,7 @@ export default function AdminPage() {
                         <AlertDialogCancel className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-2">Отмена</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => handleDeleteUser(user.id)}
-                          className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest bg-destructive text-white hover:bg-destructive/90 shadow-lg shadow-destructive/20"
+                          className="h-10 rounded-xl text-[10px] font-black uppercase tracking-widest bg-destructive text-white hover:bg-destructive/90 shadow-lg shadow-destructive/20 border-none"
                         >
                           Удалить
                         </AlertDialogAction>
@@ -141,37 +140,37 @@ export default function AdminPage() {
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <Avatar className="w-12 h-12 border-2 border-slate-50 shadow-sm shrink-0">
-                      <AvatarFallback className="bg-slate-950 text-white font-black text-xs">
+                    <Avatar className="w-12 h-12 border-2 border-background shadow-sm shrink-0">
+                      <AvatarFallback className="bg-foreground text-background font-black text-xs">
                         {user.name?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex flex-col min-w-0 pr-10">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">
+                      <h3 className="text-sm font-black text-foreground uppercase tracking-tight truncate">
                         {user.name}
                       </h3>
                       <div className="flex flex-col space-y-0.5 mt-0.5">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                          <Mail className="w-3 h-3 text-slate-300" />
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                          <Mail className="w-3 h-3 opacity-50" />
                           <span className="truncate">{user.email}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                          <Building2 className="w-3 h-3 text-slate-300" />
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                          <Building2 className="w-3 h-3 opacity-50" />
                           <span className="truncate">{getDeptLabel(user.departmentId)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-slate-50">
+                  <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
                     {userData?.role === 'owner' && (
                       <div className="flex-1 sm:flex-initial">
                         <Select 
                           value={user.departmentId} 
                           onValueChange={(v) => handleDepartmentChange(user.id, v)}
                         >
-                          <SelectTrigger className="h-8 w-full sm:w-[140px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-lg focus:ring-slate-900/10">
+                          <SelectTrigger className="h-8 w-full sm:w-[140px] text-[9px] font-black uppercase tracking-wider bg-accent border-none rounded-lg focus:ring-primary/10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -187,7 +186,7 @@ export default function AdminPage() {
 
                     <div className="flex-1 sm:flex-initial">
                       {user.role === 'owner' ? (
-                        <div className="flex items-center justify-center gap-2 text-[9px] font-black text-white px-4 bg-slate-950 rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
+                        <div className="flex items-center justify-center gap-2 text-[9px] font-black text-background px-4 bg-foreground rounded-lg shadow-sm uppercase tracking-widest h-8 sm:w-[110px]">
                           <Shield className="w-3 h-3" />
                           OWNER
                         </div>
@@ -197,7 +196,7 @@ export default function AdminPage() {
                           onValueChange={(v) => handleRoleChange(user.id, v as Role)}
                           disabled={userData?.role !== 'owner' && user.role === 'head'}
                         >
-                          <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-slate-50 border-none rounded-lg focus:ring-slate-900/10">
+                          <SelectTrigger className="h-8 w-full sm:w-[110px] text-[9px] font-black uppercase tracking-wider bg-accent border-none rounded-lg focus:ring-primary/10">
                             <SelectValue placeholder="Роль" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-none shadow-2xl">

@@ -59,11 +59,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <Link href={`/tasks/${id}`}>
-      <Card className="card-industrial overflow-hidden rounded-2xl">
+      <Card className="card-industrial overflow-hidden rounded-2xl group border-none">
         <div className={`h-1.5 w-full ${PRIORITY_COLORS[priority]}`} />
         <CardHeader className="p-4 pb-2 space-y-2">
           <div className="flex justify-between items-center">
-            <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-600 rounded-sm border-none">
+            <Badge className="text-[8px] font-black uppercase px-2 py-0.5 bg-muted text-muted-foreground rounded-sm border-none">
               {status}
             </Badge>
             <div className="flex items-center gap-1">
@@ -72,14 +72,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7 text-slate-300 hover:text-slate-950 hover:bg-slate-50"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent"
                     onClick={handleEditClick}
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:bg-slate-50">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-accent">
                         <MoreVertical className="w-3.5 h-3.5" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -88,7 +88,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                         <DropdownMenuItem 
                           key={s} 
                           onClick={(e) => handleStatusChange(e as any, s)}
-                          className={`text-[9px] font-black uppercase p-2 hover:bg-slate-50 rounded-lg cursor-pointer ${status === s ? "bg-slate-50 text-slate-900" : "text-slate-400"}`}
+                          className={`text-[9px] font-black uppercase p-2 hover:bg-accent rounded-lg cursor-pointer ${status === s ? "bg-accent text-foreground" : "text-muted-foreground"}`}
                         >
                           {s}
                         </DropdownMenuItem>
@@ -99,32 +99,32 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               )}
             </div>
           </div>
-          <CardTitle className="text-sm font-black line-clamp-2 text-slate-900 uppercase tracking-tight leading-tight">
+          <CardTitle className="text-sm font-black line-clamp-2 text-foreground uppercase tracking-tight leading-tight">
             {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0 space-y-4">
           <div className="space-y-1">
-            <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tighter">
-              <Calendar className="w-3 h-3 text-slate-300" />
+            <div className="flex items-center text-[10px] font-bold text-muted-foreground gap-2 uppercase tracking-tighter">
+              <Calendar className="w-3 h-3 opacity-50" />
               <span>{new Date(datetime).toLocaleDateString('ru-RU')} {new Date(datetime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
-            <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-tighter">
-              <MapPin className="w-3 h-3 text-slate-300" />
+            <div className="flex items-center text-[10px] font-bold text-muted-foreground gap-2 uppercase tracking-tighter">
+              <MapPin className="w-3 h-3 opacity-50" />
               <span className="truncate">{place}</span>
             </div>
           </div>
           
-          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div className="flex items-center gap-1.5">
-              <UserCircle className="w-3 h-3 text-slate-300" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight truncate max-w-[120px]">
+              <UserCircle className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight truncate max-w-[120px]">
                 {createdByName || '—'}
               </span>
             </div>
             {checklist.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                <span className="text-[9px] font-black text-foreground bg-accent px-1.5 py-0.5 rounded">
                   {Math.round(progress)}%
                 </span>
               </div>
