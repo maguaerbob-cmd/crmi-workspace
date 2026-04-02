@@ -19,35 +19,30 @@ export default function Dashboard() {
     if (!db || !userData || !userData.departmentId) return null;
     const tasksRef = collection(db, 'tasks');
     
-    const hasFullAccess = userData.role === 'owner' || 
-                         userData.departmentId === 'media-center' || 
-                         userData.departmentId === 'technical-service-center';
-    
-    if (hasFullAccess) {
+    if (userData.role === 'owner') {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
-      // Для обычных пользователей ОБЯЗАТЕЛЬНО фильтруем по отделу для правил Firestore
-      return query(tasksRef, where('departmentId', '==', userData.departmentId), orderBy('createdAt', 'desc'));
+      // Для соблюдения правил безопасности (Rules are not filters):
+      // Фильтруем по отделу И исключаем завершенные задачи, так как к ним нет доступа у не-владельцев
+      return query(
+        tasksRef, 
+        where('departmentId', '==', userData.departmentId), 
+        where('status', 'in', ['запланировано', 'в процессе']),
+        orderBy('createdAt', 'desc')
+      );
     }
   }, [db, userData]);
 
-  const { data: rawTasks, isLoading } = useCollection(tasksQuery);
+  const { data: tasks, isLoading } = useCollection(tasksQuery);
 
-  const tasks = useMemo(() => {
-    if (!rawTasks) return [];
-    let filtered = rawTasks;
-    // Скрываем завершенные задачи для всех, кроме владельца
-    if (userData?.role !== 'owner') {
-      filtered = filtered.filter((t: any) => t.status !== 'завершено');
-    }
-    return filtered;
-  }, [rawTasks, userData]);
-
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(search.toLowerCase()) || 
-    task.description?.toLowerCase().includes(search.toLowerCase()) ||
-    task.place?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.filter(task => 
+      task.title.toLowerCase().includes(search.toLowerCase()) || 
+      task.description?.toLowerCase().includes(search.toLowerCase()) ||
+      task.place?.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [tasks, search]);
 
   return (
     <Layout title="Задачи">
