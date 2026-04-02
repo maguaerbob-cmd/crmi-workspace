@@ -95,7 +95,11 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const currentDepartment = DEPARTMENTS.find(d => d.id === userData?.departmentId);
+  const getDisplayDept = () => {
+    if (!userData) return '—';
+    if (userData.role === 'director' || userData.role === 'deputy_director') return 'Администрация';
+    return DEPARTMENTS.find(d => d.id === userData.departmentId)?.label || userData.departmentId;
+  };
 
   return (
     <Layout title="Профиль">
@@ -209,9 +213,9 @@ export default function ProfilePage() {
                   <Building className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest mb-0.5">Отдел</p>
+                  <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest mb-0.5">Подразделение</p>
                   <p className="text-sm font-bold text-foreground truncate">
-                    {currentDepartment?.label || userData?.departmentId}
+                    {getDisplayDept()}
                   </p>
                 </div>
               </div>

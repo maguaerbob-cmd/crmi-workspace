@@ -87,6 +87,11 @@ export default function AdminPage() {
 
   const getDeptLabel = (id: string) => DEPARTMENTS.find(d => d.id === id)?.label || id;
 
+  const getDisplayDept = (user: any) => {
+    if (user.role === 'director' || user.role === 'deputy_director') return 'Администрация';
+    return getDeptLabel(user.departmentId);
+  };
+
   if (isLoading) return (
     <Layout title="Управление">
       <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -96,14 +101,12 @@ export default function AdminPage() {
     </Layout>
   );
 
-  // Фильтруем пользователей: исключаем Владельца (role: 'owner') из всех списков
   const pendingUsers = users?.filter(u => !u.isApproved && u.role !== 'owner') || [];
   const approvedUsers = users?.filter(u => u.isApproved && u.role !== 'owner') || [];
 
   return (
     <Layout title="Управление персоналом">
       <div className="space-y-8 max-w-5xl mx-auto">
-        {/* Очередь на одобрение - доступна только Владельцу */}
         {isOwner && pendingUsers.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-l-4 border-yellow-500 pl-4">
@@ -125,7 +128,7 @@ export default function AdminPage() {
                       </Avatar>
                       <div>
                         <h3 className="text-xs font-black uppercase">{user.name}</h3>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase">{user.email} • {getDeptLabel(user.departmentId)}</p>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase">{user.email} • {getDisplayDept(user)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -152,7 +155,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Список сотрудников */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="flex items-center gap-3">
@@ -175,7 +177,6 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 gap-3">
               {approvedUsers.map((user) => (
                 <Card key={user.id} className="border-none shadow-sm hover:shadow-md transition-all bg-card rounded-2xl overflow-hidden relative group">
-                  {/* Удаление доступно только Владельцу */}
                   {isOwner && (
                     <div className="absolute top-3 right-3 z-10">
                       <AlertDialog>
@@ -226,14 +227,13 @@ export default function AdminPage() {
                             </div>
                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
                               <Building2 className="w-3 h-3 opacity-50" />
-                              <span className="truncate">{getDeptLabel(user.departmentId)}</span>
+                              <span className="truncate">{getDisplayDept(user)}</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-none border-border/50">
-                        {/* Смена отдела и роли доступна только Владельцу */}
                         {isOwner ? (
                           <>
                             <div className="flex-1 sm:flex-initial">
@@ -264,7 +264,6 @@ export default function AdminPage() {
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
-                                    // Владелец может назначать любую роль, кроме owner (так как он уже скрыт)
                                     role !== 'owner' && (
                                       <SelectItem key={role} value={role} className="text-[9px] font-black uppercase tracking-wider">
                                         {label}
@@ -276,11 +275,10 @@ export default function AdminPage() {
                             </div>
                           </>
                         ) : (
-                          /* Отображение для Директоров и Зам. директоров (только текст) */
                           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                             <Badge variant="outline" className="h-7 text-[8px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground whitespace-nowrap">
                               <Building2 className="w-2.5 h-2.5 mr-1.5 opacity-60" />
-                              {getDeptLabel(user.departmentId)}
+                              {getDisplayDept(user)}
                             </Badge>
                             <Badge variant="secondary" className="h-7 text-[8px] font-black uppercase tracking-widest bg-foreground text-background border-none whitespace-nowrap">
                               <Briefcase className="w-2.5 h-2.5 mr-1.5 opacity-60" />
