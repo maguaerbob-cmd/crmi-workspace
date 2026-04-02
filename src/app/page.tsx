@@ -22,17 +22,16 @@ export default function Dashboard() {
     if (!db || !userData) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Владелец видит всё без фильтров
+    // Владелец видит всё без фильтров статуса
     if (userData.role === 'owner') {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Остальные роли: только свой отдел и НЕ завершенные (требование безопасности)
+    // Все остальные: видят все задачи организации, которые НЕ завершены
     return query(
       tasksRef, 
-      where('departmentId', '==', userData.departmentId),
       where('status', '!=', 'завершено'),
-      orderBy('status'), // Требуется для фильтра != в Firestore
+      orderBy('status'), 
       orderBy('createdAt', 'desc')
     );
   }, [db, userData]);
@@ -54,7 +53,7 @@ export default function Dashboard() {
       );
     }
 
-    // Дополнительный фильтр по отделу (для владельца)
+    // Фильтр по отделу
     if (selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
@@ -76,35 +75,31 @@ export default function Dashboard() {
             />
           </div>
           
-          {userData?.role === 'owner' && (
-            <div className="w-full md:w-72">
-              <Select value={selectedDept} onValueChange={setSelectedDept}>
-                <SelectTrigger className="h-11 bg-white border-slate-200 border-2 shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-slate-400" />
-                    <SelectValue placeholder="Все отделы" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">Все отделы</SelectItem>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
-                      {dept.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="w-full md:w-72">
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger className="h-11 bg-white border-slate-200 border-2 shadow-sm rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-slate-400" />
+                  <SelectValue placeholder="Все отделы" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">Все отделы</SelectItem>
+                {DEPARTMENTS.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id} className="text-[10px] font-black uppercase tracking-widest">
+                    {dept.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-slate-400" />
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-              {userData?.role !== 'owner' 
-                ? `Мой отдел: ${DEPARTMENTS.find(d => d.id === userData?.departmentId)?.label}` 
-                : 'Общий список задач'}
+              {selectedDept === 'all' ? 'Общий список организации' : `Отдел: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`}
             </h2>
           </div>
           <div className="text-[10px] font-black text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-lg uppercase shadow-sm">

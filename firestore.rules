@@ -29,18 +29,18 @@ service cloud.firestore {
 
     // Коллекция пользователей
     match /userProfiles/{userId} {
-      // Каждый авторизованный может читать себя, Владелец - всех
+      // Каждый авторизованный может читать свой профиль, Владелец - всех
       allow get: if isSignedIn() && (request.auth.uid == userId || isOwner(getAuthData()));
       
-      // Руководитель видит только свой отдел, Владелец - всех
+      // Владелец видит всех. Руководитель и Инспектор видят только свой отдел (для назначения задач)
       allow list: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && resource.data.departmentId == getAuthData().departmentId)
+        ((isHead(getAuthData()) || isInspector(getAuthData())) && resource.data.departmentId == getAuthData().departmentId)
       );
       
       allow create: if isSignedIn() && request.auth.uid == userId;
       
-      // Владелец и Руководитель (своего отдела) могут менять роли
+      // Владелец и Руководитель (своего отдела) могут менять роли. Пользователь может менять свои данные.
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || 
         (isHead(getAuthData()) && resource.data.departmentId == getAuthData().departmentId) ||
@@ -54,25 +54,22 @@ service cloud.firestore {
     match /tasks/{taskId} {
       // ЧТЕНИЕ: 
       // 1. Владелец видит всё
-      // 2. Остальные видят только свой отдел и только НЕ завершенные
+      // 2. Все остальные видят любые НЕ завершенные задачи всей организации
       allow read, list: if isSignedIn() && (
-        isOwner(getAuthData()) || (
-          resource.data.departmentId == getAuthData().departmentId && 
-          resource.data.status != 'завершено'
-        )
+        isOwner(getAuthData()) || 
+        resource.data.status != 'завершено'
       );
 
-      // СОЗДАНИЕ: Владелец, Руководитель своего отдела, Инспектор
+      // СОЗДАНИЕ: Владелец, Руководитель своего отдела, Инспектор своего отдела
       allow create: if isSignedIn() && (
         isOwner(getAuthData()) || 
-        (isHead(getAuthData()) && request.resource.data.departmentId == getAuthData().departmentId) ||
-        isInspector(getAuthData())
+        ((isHead(getAuthData()) || isInspector(getAuthData())) && request.resource.data.departmentId == getAuthData().departmentId)
       );
 
       // ОБНОВЛЕНИЕ:
       // 1. Владелец - всё
       // 2. Руководитель - задачи своего отдела
-      // 3. Инспектор - свои или где он ответственный
+      // 3. Инспектор - где он ответственный или создатель
       // 4. Читатель - ТОЛЬКО статус в своем отделе
       allow update: if isSignedIn() && (
         isOwner(getAuthData()) || 
@@ -86,7 +83,7 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isOwner(getAuthData());
     }
 
-    match /departments/{deptId} {
+    match /databases/{database}/documents/departments/{deptId} {
       allow read: if isSignedIn();
     }
   }
