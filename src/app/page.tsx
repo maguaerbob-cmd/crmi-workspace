@@ -37,12 +37,12 @@ export default function Dashboard() {
     
     // Если пользователь не авторизован - показываем всё (публичный доступ)
     if (!user) {
-      // Для гостей используем простой запрос без сложных условий, чтобы избежать проблем с индексами или правами
+      // Для гостей используем запрос по умолчанию. 
+      // Если возникают ошибки прав доступа с orderBy, пробуем простой запрос.
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если пользователь авторизован, но данные профиля еще грузятся - ждем,
-    // чтобы не отправить некорректный запрос без departmentId
+    // Если пользователь авторизован, но данные профиля еще грузятся - ждем
     if (!userData) return null;
 
     // Глобальные админы видят всё
@@ -67,9 +67,9 @@ export default function Dashboard() {
     
     let result = tasks;
 
-    // Обычные сотрудники (не админы) видят только незавершенные задачи своего отдела
-    if (user && !isGlobalManager) {
-      result = result.filter(task => task.status !== 'завершено');
+    // Обычные сотрудники (не админы) видят только задачи своего отдела
+    if (user && !isGlobalManager && userData) {
+      result = result.filter(task => task.departmentId === userData.departmentId);
     }
 
     if (search.trim()) {
@@ -81,13 +81,13 @@ export default function Dashboard() {
       );
     }
 
-    // Дополнительная фильтрация для менеджеров или гостей
+    // Дополнительная фильтрация по отделу для менеджеров или гостей
     if ((isGlobalManager || !user) && selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
 
     return result;
-  }, [tasks, search, selectedDept, isGlobalManager, user]);
+  }, [tasks, search, selectedDept, isGlobalManager, user, userData]);
 
   const isLoading = authLoading || (!!user && !userData) || tasksLoading;
 
