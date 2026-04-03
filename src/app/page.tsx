@@ -14,7 +14,7 @@ import { Search, FolderKanban, Filter, Building2, Clock } from 'lucide-react';
 import { DEPARTMENTS, ALL_ACCESS_DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
-  const { userData, user } = useAuth();
+  const { userData, user, loading: authLoading } = useAuth();
   const db = useFirestore();
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
@@ -32,7 +32,7 @@ export default function Dashboard() {
   }, [userData]);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || authLoading) return null;
     const tasksRef = collection(db, 'tasks');
     
     // Если пользователь не авторизован - показываем всё (публичный доступ)
@@ -40,8 +40,7 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если пользователь авторизован, но данные профиля еще грузятся - ждем,
-    // чтобы не передать undefined в isGlobalManager или фильтры
+    // Если пользователь авторизован, но данные профиля еще грузятся - ждем
     if (!userData) return null;
 
     // Глобальные админы видят всё
@@ -49,7 +48,6 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
-      // Важно: проверяем наличие departmentId, чтобы избежать ошибки "Unsupported field value: undefined"
       if (!userData.departmentId) return null;
 
       return query(
@@ -58,9 +56,9 @@ export default function Dashboard() {
         orderBy('createdAt', 'desc')
       );
     }
-  }, [db, user, userData, isGlobalManager]);
+  }, [db, user, userData, isGlobalManager, authLoading]);
 
-  const { data: tasks, isLoading } = useCollection(tasksQuery);
+  const { data: tasks, isLoading: tasksLoading } = useCollection(tasksQuery);
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -88,6 +86,8 @@ export default function Dashboard() {
 
     return result;
   }, [tasks, search, selectedDept, isGlobalManager, user]);
+
+  const isLoading = authLoading || (!!user && !userData) || tasksLoading;
 
   // Показываем заглушку "Ожидание доступа" только если пользователь залогинен, но не одобрен
   if (user && userData && !userData.isApproved && userData.role !== 'owner') {

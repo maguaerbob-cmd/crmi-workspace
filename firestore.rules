@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CRMI TaskFlow Security Rules - Public Read for Tasks
+     * CRMI TaskFlow Security Rules
      */
 
     // --- Helper Functions ---
@@ -13,18 +13,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Получаем данные профиля текущего пользователя
+    // Safely get user data only if signed in
     function getUserData() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
+      return isSignedIn() ? get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data : null;
     }
 
-    // Проверка на права глобального администратора
+    // Check for global admin rights safely
     function isGlobalAdmin(userData) {
-      return userData.role == 'owner' || 
-             userData.role == 'director' || 
-             userData.role == 'deputy_director' ||
-             userData.departmentId == 'technical-service-center' || 
-             userData.departmentId == 'media-center';
+      return userData != null && (
+        userData.role == 'owner' || 
+        userData.role == 'director' || 
+        userData.role == 'deputy_director' ||
+        userData.departmentId == 'technical-service-center' || 
+        userData.departmentId == 'media-center'
+      );
     }
 
     // --- Collection Rules ---
@@ -43,22 +45,22 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
+      // Publicly readable for branding (logo)
       allow get: if true;
       allow list: if isSignedIn();
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /tasks/{taskId} {
-      // Чтение задач теперь доступно всем (публично)
+      // Publicly readable (list and get)
       allow read: if true;
       
-      // Создание задачи: только для авторизованных сотрудников
+      // Mutations require specific permissions
       allow create: if isSignedIn() && 
                     let userData = getUserData();
                     request.resource.data.createdBy == request.auth.uid &&
                     (isGlobalAdmin(userData) || request.resource.data.departmentId == userData.departmentId);
       
-      // Редактирование: создатель, ответственный, начальник отдела или админ
       allow update: if isSignedIn() && 
                     let userData = getUserData();
                     (isGlobalAdmin(userData) || (
@@ -69,7 +71,6 @@ service cloud.firestore {
                       )
                     ));
       
-      // Удаление: создатель (если не завершена) или админ
       allow delete: if isSignedIn() && 
                     let userData = getUserData();
                     (isGlobalAdmin(userData) || (
