@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * CRMI TaskFlow Security Rules
-     * Редакция: 2024-05-24-v3 (Полный публичный доступ на чтение)
+     * Редакция: 2024-05-24-v4 (Публичный доступ ко всем задачам)
      */
 
     // --- Helper Functions ---
@@ -37,7 +37,6 @@ service cloud.firestore {
     }
 
     match /userProfiles/{userId} {
-      // Чтение профилей доступно всем авторизованным для корректной работы UI
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isGlobalAdmin(getUserData()));
@@ -51,16 +50,17 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      // Полный публичный доступ на чтение (list и get) для всех посетителей
+      // ПОЛНЫЙ ПУБЛИЧНЫЙ ДОСТУП НА ЧТЕНИЕ (get и list)
+      // Это решает проблему "Missing or insufficient permissions" для всех пользователей
       allow read: if true;
       
       // Создание: любой авторизованный сотрудник
       allow create: if isSignedIn();
       
-      // Редактирование: админы, руководители отделов или ответственные
+      // Редактирование: любой авторизованный (ограничение функционала реализовано в UI)
       allow update: if isSignedIn();
       
-      // Удаление: админы или создатели
+      // Удаление: любой авторизованный (ограничение функционала реализовано в UI)
       allow delete: if isSignedIn();
     }
   }
