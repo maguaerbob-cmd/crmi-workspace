@@ -40,7 +40,8 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если пользователь авторизован, но данные профиля еще грузятся - ждем
+    // Если пользователь авторизован, но данные профиля еще грузятся - ждем,
+    // чтобы не отправить некорректный запрос без departmentId
     if (!userData) return null;
 
     // Глобальные админы видят всё
@@ -48,6 +49,7 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
+      // Если departmentId еще нет - возвращаем null, чтобы не было ошибки Missing Permissions
       if (!userData.departmentId) return null;
 
       return query(
