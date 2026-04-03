@@ -10,7 +10,7 @@ import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FolderKanban, Filter, Building2, Clock } from 'lucide-react';
+import { Search, FolderKanban, Filter, Building2 } from 'lucide-react';
 import { DEPARTMENTS, ALL_ACCESS_DEPARTMENTS } from '@/lib/constants';
 
 export default function Dashboard() {
@@ -27,7 +27,7 @@ export default function Dashboard() {
       role === 'owner' || 
       role === 'director' || 
       role === 'deputy_director' || 
-      (deptId && ALL_ACCESS_DEPARTMENTS.includes(deptId as any))
+      (!!deptId && ALL_ACCESS_DEPARTMENTS.includes(deptId as any))
     );
   }, [userData]);
 
@@ -40,7 +40,7 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если авторизован, но данные профиля еще грузятся - ждем, чтобы не вызвать ошибку undefined в where
+    // Если авторизован, дожидаемся загрузки профиля
     if (!userData) return null;
 
     // Глобальные менеджеры видят всё
@@ -48,11 +48,12 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
-      if (!userData.departmentId) return null;
+      const deptId = userData.departmentId;
+      if (!deptId) return null;
       
       return query(
         tasksRef, 
-        where('departmentId', '==', userData.departmentId),
+        where('departmentId', '==', deptId),
         orderBy('createdAt', 'desc')
       );
     }
@@ -65,11 +66,7 @@ export default function Dashboard() {
     
     let result = tasks;
 
-    // Обычные сотрудники видят только задачи своего отдела (дублируем фильтрацию на клиенте для надежности)
-    if (user && !isGlobalManager && userData?.departmentId) {
-      result = result.filter(task => task.departmentId === userData.departmentId);
-    }
-
+    // Дополнительная фильтрация по строке поиска
     if (search.trim()) {
       const lowerSearch = search.toLowerCase();
       result = result.filter(task => 
@@ -79,13 +76,13 @@ export default function Dashboard() {
       );
     }
 
-    // Дополнительная фильтрация по отделу для менеджеров или гостей
+    // Дополнительная фильтрация по отделу (для менеджеров или гостей)
     if ((isGlobalManager || !user) && selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
     }
 
     return result;
-  }, [tasks, search, selectedDept, isGlobalManager, user, userData]);
+  }, [tasks, search, selectedDept, isGlobalManager, user]);
 
   const isLoading = authLoading || (!!user && !userData) || tasksLoading;
 
@@ -129,7 +126,9 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-muted-foreground" />
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              {(!isGlobalManager && user && userData) ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData.departmentId)?.label}` : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
+              {(!isGlobalManager && user && userData) 
+                ? `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === userData.departmentId)?.label || '—'}` 
+                : (selectedDept === 'all' ? 'ОБЩИЙ СПИСОК ОРГАНИЗАЦИИ' : `ОТДЕЛ: ${DEPARTMENTS.find(d => d.id === selectedDept)?.label}`)}
             </h2>
           </div>
           <div className="text-[10px] font-black text-primary-foreground bg-foreground px-3 py-1 uppercase rounded-sm">

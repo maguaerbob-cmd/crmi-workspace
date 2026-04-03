@@ -5,8 +5,7 @@ service cloud.firestore {
 
     /**
      * CRMI TaskFlow Security Rules
-     * Редакция: Публичный доступ к задачам и настройкам.
-     * Дата обновления: 2024-05-23 (Принудительное обновление для гостевого доступа)
+     * Редакция: 2024-05-24 (Публичный доступ и автоматическое одобрение)
      */
 
     // --- Helper Functions ---
@@ -15,12 +14,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Safely get user data only if signed in
     function getUserData() {
       return isSignedIn() ? get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data : null;
     }
 
-    // Check for global admin rights safely
     function isGlobalAdmin(userData) {
       return userData != null && (
         userData.role == 'owner' || 
@@ -34,7 +31,7 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     match /departments/{departmentId} {
-      // Публичный доступ к списку отделов
+      // Открыто для всех для отображения названий отделов в карточках
       allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
@@ -48,16 +45,15 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      // Публичный доступ к настройкам (логотип и т.д.)
+      // Открыто для всех (логотип и общие настройки)
       allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /tasks/{taskId} {
-      // Явное публичное разрешение на чтение
+      // Полный публичный доступ на чтение для всех посетителей
       allow read: if true;
       
-      // Создание, обновление и удаление требуют авторизации и соответствующих прав
       allow create: if isSignedIn() && 
                     let userData = getUserData();
                     request.resource.data.createdBy == request.auth.uid &&
