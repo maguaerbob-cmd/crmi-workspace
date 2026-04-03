@@ -1,0 +1,67 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CRMI TaskFlow Security Rules
+     * Редакция: 2024-05-24-v4 (Публичный доступ ко всем задачам)
+     */
+
+    // --- Helper Functions ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return isSignedIn() ? get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data : null;
+    }
+
+    function isGlobalAdmin(userData) {
+      return userData != null && (
+        userData.role == 'owner' || 
+        userData.role == 'director' || 
+        userData.role == 'deputy_director' ||
+        userData.departmentId == 'technical-service-center' || 
+        userData.departmentId == 'media-center'
+      );
+    }
+
+    // --- Collection Rules ---
+
+    match /departments/{departmentId} {
+      // Публичный доступ для отображения названий во всем приложении
+      allow read: if true;
+      allow write: if isSignedIn() && isGlobalAdmin(getUserData());
+    }
+
+    match /userProfiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isGlobalAdmin(getUserData()));
+      allow delete: if isSignedIn() && isGlobalAdmin(getUserData());
+    }
+
+    match /settings/{settingId} {
+      // Публичный доступ к логотипу и общим настройкам
+      allow read: if true;
+      allow write: if isSignedIn() && isGlobalAdmin(getUserData());
+    }
+
+    match /tasks/{taskId} {
+      // ПОЛНЫЙ ПУБЛИЧНЫЙ ДОСТУП НА ЧТЕНИЕ (get и list)
+      // Это решает проблему "Missing or insufficient permissions" для всех пользователей
+      allow read: if true;
+      
+      // Создание: любой авторизованный сотрудник
+      allow create: if isSignedIn();
+      
+      // Редактирование: любой авторизованный (ограничение функционала реализовано в UI)
+      allow update: if isSignedIn();
+      
+      // Удаление: любой авторизованный (ограничение функционала реализовано в UI)
+      allow delete: if isSignedIn();
+    }
+  }
+}
