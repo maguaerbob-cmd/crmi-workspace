@@ -35,23 +35,22 @@ export default function Dashboard() {
     if (!db || authLoading) return null;
     const tasksRef = collection(db, 'tasks');
     
-    // Если пользователь не авторизован - показываем всё (публичный доступ)
+    // Если пользователь не авторизован - показываем общий список (публичный доступ)
     if (!user) {
-      // Для гостей используем запрос по умолчанию. 
-      // Если возникают ошибки прав доступа с orderBy, пробуем простой запрос.
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если пользователь авторизован, но данные профиля еще грузятся - ждем
+    // Если авторизован, но данные профиля грузятся - ждем
     if (!userData) return null;
 
-    // Глобальные админы видят всё
+    // Глобальные менеджеры видят всё
     if (isGlobalManager) {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
+      // Добавляем проверку на существование departmentId
       if (!userData.departmentId) return null;
-
+      
       return query(
         tasksRef, 
         where('departmentId', '==', userData.departmentId),
@@ -67,8 +66,8 @@ export default function Dashboard() {
     
     let result = tasks;
 
-    // Обычные сотрудники (не админы) видят только задачи своего отдела
-    if (user && !isGlobalManager && userData) {
+    // Обычные сотрудники видят только задачи своего отдела (дублируем фильтрацию на клиенте для надежности)
+    if (user && !isGlobalManager && userData?.departmentId) {
       result = result.filter(task => task.departmentId === userData.departmentId);
     }
 
@@ -91,7 +90,7 @@ export default function Dashboard() {
 
   const isLoading = authLoading || (!!user && !userData) || tasksLoading;
 
-  // Показываем заглушку "Ожидание доступа" только если пользователь залогинен, но не одобрен
+  // Ожидание доступа для авторизованных, но не одобренных пользователей
   if (user && userData && !userData.isApproved && userData.role !== 'owner') {
     return (
       <Layout title="Ожидание доступа">

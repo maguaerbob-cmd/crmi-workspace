@@ -6,7 +6,7 @@ service cloud.firestore {
     /**
      * CRMI TaskFlow Security Rules
      * Редакция: Публичный доступ к задачам и настройкам.
-     * Дата обновления: 2024-05-21 (Исправление ошибки доступа для гостей)
+     * Дата обновления: 2024-05-22 (Принудительное обновление прав доступа для гостей)
      */
 
     // --- Helper Functions ---
@@ -34,7 +34,7 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     match /departments/{departmentId} {
-      // Разрешаем публичное чтение для корректного отображения названий отделов в карточках
+      // Публичный доступ к списку отделов
       allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
@@ -49,13 +49,13 @@ service cloud.firestore {
 
     match /settings/{settingId} {
       // Публичный доступ к настройкам (логотип и т.д.)
-      allow get, list: if true;
+      allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /tasks/{taskId} {
-      // Явное разрешение на чтение и листинг для всех (включая гостей)
-      allow get, list: if true;
+      // Явное публичное разрешение на чтение и листинг
+      allow read: if true;
       
       // Создание, обновление и удаление требуют авторизации и соответствующих прав
       allow create: if isSignedIn() && 
