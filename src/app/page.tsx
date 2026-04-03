@@ -40,7 +40,7 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если авторизован, дожидаемся загрузки профиля
+    // Если авторизован, дожидаемся загрузки профиля для определения прав
     if (!userData) return null;
 
     // Глобальные менеджеры видят всё

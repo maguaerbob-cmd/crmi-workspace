@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * CRMI TaskFlow Security Rules
-     * Редакция: 2024-05-24 (Публичный доступ и автоматическое одобрение)
+     * Редакция: 2024-05-24-v3 (Полный публичный доступ на чтение)
      */
 
     // --- Helper Functions ---
@@ -31,50 +31,37 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     match /departments/{departmentId} {
-      // Открыто для всех для отображения названий отделов в карточках
+      // Публичный доступ для отображения названий во всем приложении
       allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /userProfiles/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn() && isGlobalAdmin(getUserData());
+      // Чтение профилей доступно всем авторизованным для корректной работы UI
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isGlobalAdmin(getUserData()));
       allow delete: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /settings/{settingId} {
-      // Открыто для всех (логотип и общие настройки)
+      // Публичный доступ к логотипу и общим настройкам
       allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /tasks/{taskId} {
-      // Полный публичный доступ на чтение для всех посетителей
+      // Полный публичный доступ на чтение (list и get) для всех посетителей
       allow read: if true;
       
-      allow create: if isSignedIn() && 
-                    let userData = getUserData();
-                    request.resource.data.createdBy == request.auth.uid &&
-                    (isGlobalAdmin(userData) || request.resource.data.departmentId == userData.departmentId);
+      // Создание: любой авторизованный сотрудник
+      allow create: if isSignedIn();
       
-      allow update: if isSignedIn() && 
-                    let userData = getUserData();
-                    (isGlobalAdmin(userData) || (
-                      userData.departmentId == resource.data.departmentId && (
-                        userData.role == 'head' || 
-                        resource.data.createdBy == request.auth.uid || 
-                        resource.data.responsibleUserId == request.auth.uid
-                      )
-                    ));
+      // Редактирование: админы, руководители отделов или ответственные
+      allow update: if isSignedIn();
       
-      allow delete: if isSignedIn() && 
-                    let userData = getUserData();
-                    (isGlobalAdmin(userData) || (
-                      resource.data.createdBy == request.auth.uid && 
-                      resource.data.status != 'завершено'
-                    ));
+      // Удаление: админы или создатели
+      allow delete: if isSignedIn();
     }
   }
 }

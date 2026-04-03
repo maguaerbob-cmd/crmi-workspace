@@ -47,7 +47,7 @@ export default function Register() {
         email,
         departmentId,
         role: 'reader',
-        isApproved: true, // Установлено в true для автоматического доступа
+        isApproved: true, // Регистрация одобряется автоматически
         createdAt: new Date().toISOString()
       };
 
