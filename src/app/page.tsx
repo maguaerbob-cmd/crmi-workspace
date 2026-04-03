@@ -37,6 +37,7 @@ export default function Dashboard() {
     
     // Если пользователь не авторизован - показываем всё (публичный доступ)
     if (!user) {
+      // Для гостей используем простой запрос без сложных условий, чтобы избежать проблем с индексами или правами
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
@@ -49,7 +50,6 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
-      // Если departmentId еще нет - возвращаем null, чтобы не было ошибки Missing Permissions
       if (!userData.departmentId) return null;
 
       return query(

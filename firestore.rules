@@ -5,7 +5,8 @@ service cloud.firestore {
 
     /**
      * CRMI TaskFlow Security Rules
-     * Обновлено для обеспечения публичного доступа к списку задач.
+     * Редакция: Публичный доступ к задачам и настройкам.
+     * Дата обновления: 2024-05-20
      */
 
     // --- Helper Functions ---
@@ -33,7 +34,8 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     match /departments/{departmentId} {
-      allow read: if isSignedIn();
+      // Разрешаем публичное чтение для корректного отображения названий отделов в карточках
+      allow read: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
@@ -46,18 +48,16 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      // Publicly readable for branding (logo)
-      allow get: if true;
-      allow list: if isSignedIn();
+      // Публичный доступ к настройкам (логотип и т.д.)
+      allow get, list: if true;
       allow write: if isSignedIn() && isGlobalAdmin(getUserData());
     }
 
     match /tasks/{taskId} {
-      // Явное разрешение на публичное чтение и получение списка
-      allow get: if true;
-      allow list: if true;
+      // Полный публичный доступ на чтение и листинг задач
+      allow get, list: if true;
       
-      // Mutations require specific permissions
+      // Создание, обновление и удаление требуют авторизации и соответствующих прав
       allow create: if isSignedIn() && 
                     let userData = getUserData();
                     request.resource.data.createdBy == request.auth.uid &&
