@@ -2,9 +2,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   typescript: {
+    // Игнорируем ошибки типов при сборке для ускорения деплоя
     ignoreBuildErrors: true,
   },
   eslint: {
+    // Игнорируем линтинг при сборке
     ignoreDuringBuilds: true,
   },
   images: {
@@ -14,7 +16,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
   },
-  // Удалена настройка static export, так как Genkit требует серверную среду
+  // Важно: для App Hosting НЕ используем 'output: export'
   reactStrictMode: true,
 };
 
