@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { TaskCard } from '@/components/TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -27,18 +27,30 @@ export default function Dashboard() {
 
   const { data: tasks, isLoading: tasksLoading } = useCollection(tasksQuery);
 
+  // Автоматическое удаление прошедших задач
+  useEffect(() => {
+    if (tasks && user && db) {
+      const now = new Date();
+      tasks.forEach(task => {
+        if (task.dateTime) {
+          const taskDate = new Date(task.dateTime);
+          if (taskDate < now) {
+            console.log(`Удаление прошедшей задачи: ${task.title}`);
+            deleteDocumentNonBlocking(doc(db, 'tasks', task.id));
+          }
+        }
+      });
+    }
+  }, [tasks, user, db]);
+
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     
     let result = tasks;
 
-    // Фильтрация по отделу (выбирается пользователем или по умолчанию 'все')
+    // Фильтрация по отделу
     if (selectedDept !== 'all') {
       result = result.filter(task => task.departmentId === selectedDept);
-    } else if (user && userData && userData.role !== 'owner' && userData.role !== 'director' && userData.role !== 'deputy_director') {
-      // Если пользователь авторизован и это не админ, по умолчанию показываем его отдел
-      // Но даем возможность переключиться на "Все отделы"
-      // Если selectedDept === 'all', то мы не фильтруем, показывая всё
     }
 
     // Фильтрация по поисковой строке
@@ -52,7 +64,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [tasks, search, selectedDept, user, userData]);
+  }, [tasks, search, selectedDept]);
 
   const isLoading = authLoading || tasksLoading;
 
