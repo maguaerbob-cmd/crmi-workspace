@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Mail, Building2, UserCog, Trash2, Check, X, Briefcase } from 'lucide-react';
+import { Mail, Building2, UserCog, Trash2, Briefcase } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,17 +65,6 @@ export default function AdminPage() {
     });
   };
 
-  const handleApproval = (uid: string, approve: boolean) => {
-    if (!db || !isOwner) return;
-    if (approve) {
-      updateDocumentNonBlocking(doc(db, 'userProfiles', uid), { isApproved: true });
-      toast({ title: "ДОСТУП ПРЕДОСТАВЛЕН", description: "СОТРУДНИК ТЕПЕРЬ МОЖЕТ РАБОТАТЬ В СИСТЕМЕ." });
-    } else {
-      deleteDocumentNonBlocking(doc(db, 'userProfiles', uid));
-      toast({ title: "ЗАЯВКА ОТКЛОНЕНА", description: "ПРОФИЛЬ БЫЛ УДАЛЕН ИЗ СПИСКА ОЖИДАНИЯ." });
-    }
-  };
-
   const handleDeleteUser = (uid: string) => {
     if (!db || !isOwner) return;
     deleteDocumentNonBlocking(doc(db, 'userProfiles', uid));
@@ -101,60 +90,11 @@ export default function AdminPage() {
     </Layout>
   );
 
-  const pendingUsers = users?.filter(u => !u.isApproved && u.role !== 'owner') || [];
   const approvedUsers = users?.filter(u => u.isApproved && u.role !== 'owner') || [];
 
   return (
     <Layout title="Управление персоналом">
       <div className="space-y-8 max-w-5xl mx-auto">
-        {isOwner && pendingUsers.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 border-l-4 border-yellow-500 pl-4">
-              <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Заявки на регистрацию</h2>
-              <span className="bg-yellow-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
-                {pendingUsers.length}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {pendingUsers.map(user => (
-                <Card key={user.id} className="border-none shadow-sm bg-yellow-50/50 dark:bg-yellow-900/10 rounded-2xl overflow-hidden">
-                  <CardContent className="p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-10 h-10 border-2 border-background">
-                        <AvatarImage src={user.photoURL} className="object-cover" />
-                        <AvatarFallback className="bg-yellow-500 text-white font-black text-xs uppercase">
-                          {user.name?.substring(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="text-xs font-black uppercase">{user.name}</h3>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase">{user.email} • {getDisplayDept(user)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleApproval(user.id, true)}
-                        className="h-8 bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 gap-1.5 text-[9px] font-black uppercase tracking-wider"
-                      >
-                        <Check className="w-3.5 h-3.5" /> Одобрить
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleApproval(user.id, false)}
-                        className="h-8 text-destructive hover:bg-destructive/10 rounded-lg px-3 gap-1.5 text-[9px] font-black uppercase tracking-wider"
-                      >
-                        <X className="w-3.5 h-3.5" /> Отклонить
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="flex items-center gap-3">

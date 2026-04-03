@@ -40,7 +40,7 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     }
 
-    // Если авторизован, но данные профиля грузятся - ждем
+    // Если авторизован, но данные профиля еще грузятся - ждем, чтобы не вызвать ошибку undefined в where
     if (!userData) return null;
 
     // Глобальные менеджеры видят всё
@@ -48,7 +48,6 @@ export default function Dashboard() {
       return query(tasksRef, orderBy('createdAt', 'desc'));
     } else {
       // Обычные сотрудники видят только задачи своего отдела
-      // Добавляем проверку на существование departmentId
       if (!userData.departmentId) return null;
       
       return query(
@@ -89,30 +88,6 @@ export default function Dashboard() {
   }, [tasks, search, selectedDept, isGlobalManager, user, userData]);
 
   const isLoading = authLoading || (!!user && !userData) || tasksLoading;
-
-  // Ожидание доступа для авторизованных, но не одобренных пользователей
-  if (user && userData && !userData.isApproved && userData.role !== 'owner') {
-    return (
-      <Layout title="Ожидание доступа">
-        <div className="flex flex-col items-center justify-center py-32 text-center max-w-md mx-auto space-y-6">
-          <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center animate-pulse">
-            <Clock className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-xl font-black uppercase tracking-tight">Доступ ограничен</h1>
-            <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed">
-              Ваш аккаунт {userData.name} успешно создан, но требует подтверждения администратором.
-            </p>
-          </div>
-          <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-              Пожалуйста, свяжитесь с руководителем вашего отдела для ускорения процесса активации.
-            </p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout title="Задачи">

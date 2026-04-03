@@ -47,15 +47,15 @@ export default function Register() {
         email,
         departmentId,
         role: 'reader',
-        isApproved: false,
+        isApproved: true, // Установлено в true для автоматического доступа
         createdAt: new Date().toISOString()
       };
 
       setDocumentNonBlocking(doc(firestore, 'userProfiles', user.uid), profileData, { merge: true });
       
       toast({
-        title: "Заявка отправлена",
-        description: "Ваш профиль ожидает одобрения администратором.",
+        title: "Регистрация успешна",
+        description: "Ваш профиль создан и готов к работе.",
       });
 
       router.push('/');
